@@ -15,6 +15,13 @@
       "when": 1786683312646,
       "tag": "0001_productive_killer_shrike",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1786810511927,
+      "tag": "0002_bent_shinobi_shaw",
+      "breakpoints": true
     }
   ]
 }

@@ -1,6 +1,6 @@
 import { eq, sql } from 'drizzle-orm'
 import type { Db } from './client'
-import { users, events, registrations, individualRegistrations, logs, oauthTokens } from './schema'
+import { users, events, registrations, individualRegistrations, logs, oauthTokens,passwordResetOtps } from './schema'
 import type { Participant } from '../types'
 
 export type UserRow = typeof users.$inferSelect
@@ -16,6 +16,10 @@ export type IndividualRegistrationInsert = typeof individualRegistrations.$infer
 export type LogRow = typeof logs.$inferSelect
 export type OAuthTokenRow = typeof oauthTokens.$inferSelect
 export type OAuthTokenInsert = typeof oauthTokens.$inferInsert
+
+// Password reset OTPs
+export type PasswordResetOtpRow = typeof passwordResetOtps.$inferSelect
+export type PasswordResetOtpInsert = typeof passwordResetOtps.$inferInsert
 
 export function parseRegistrations(raw: string): Record<string, Participant[]> {
     if (!raw || raw === '{}') return {}
@@ -212,4 +216,42 @@ export async function upsertOAuthToken(db: Db, data: OAuthTokenInsert): Promise<
 
 
     return rows[0]
+}
+
+// ---- password reset OTPs ----
+
+export async function createPasswordResetOtp(
+    db: Db,
+    data: PasswordResetOtpInsert
+): Promise<PasswordResetOtpRow> {
+    const rows = await db
+        .insert(passwordResetOtps)
+        .values(data)
+        .returning()
+
+    return rows[0]
+}
+
+
+
+export async function getPasswordResetOtp(
+    db: Db,
+    email: string
+): Promise<PasswordResetOtpRow | undefined> {
+    const rows = await db
+        .select()
+        .from(passwordResetOtps)
+        .where(eq(passwordResetOtps.email, email))
+        .limit(1)
+
+    return rows[0]
+}
+
+export async function deletePasswordResetOtp(
+    db: Db,
+    email: string
+): Promise<void> {
+    await db
+        .delete(passwordResetOtps)
+        .where(eq(passwordResetOtps.email, email))
 }

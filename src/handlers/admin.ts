@@ -1,12 +1,14 @@
 import type { AppContext } from '../types'
 import { notImplemented } from './_stub'
+import { jsonOk } from '../lib/response'
 
 export async function getAdminStats(c: AppContext) {
     return notImplemented(c)
 }
 
+// Get Admin Config
 export async function getAdminConfig(c: AppContext) {
-    return notImplemented(c)
+    return jsonOk(c, {admin_emails: c.env.ADMIN_EMAILS}, 'Admin Emails')
 }
 
 //POST /api/admin/events

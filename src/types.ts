@@ -13,6 +13,10 @@ export interface Bindings {
     SMTP_PASSWORD: string
     FROM_EMAIL: string
     FROM_NAME: string
+   
+    // Gmail SMTP credentials
+    GMAIL_EMAIL: string
+    GMAIL_APP_PASSWORD: string
 
     GOOGLE_CLIENT_ID: string
     GOOGLE_CLIENT_SECRET: string
@@ -33,4 +37,12 @@ export interface Participant {
     email: string
     class: number
     phone: string
+}
+
+export interface Env {
+    DB: D1Database
+    ASSETS: Fetcher
+
+    GMAIL_EMAIL: string
+    GMAIL_APP_PASSWORD: string
 }

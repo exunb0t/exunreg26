@@ -38,6 +38,18 @@ export const events = sqliteTable('events', {
   nameIdx: index('idx_events_name').on(t.name),
 }))
 
+
+// OTP GENRATOR (EMAIL)
+
+export const passwordResetOtps = sqliteTable('password_reset_otps', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  email: text('email').notNull(),
+  otpHash: text('otp_hash').notNull(),
+  expiresAt: text('expires_at').notNull(),
+  createdAt: text('created_at').notNull().default(sql`CURRENT_TIMESTAMP`),
+})
+
+
 export const registrations = sqliteTable('registrations', {
   id: integer('id').primaryKey({ autoIncrement: true }),
   eventId: text('event_id').notNull().references(() => events.id),
