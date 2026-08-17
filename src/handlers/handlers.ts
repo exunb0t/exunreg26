@@ -44,7 +44,7 @@ export async function login(c: AppContext) {
         return jsonError(c, 'Invalid email or password', 401)
     }
 
-    const authToken = await generateAuthToken(payload.email, salt)
+    const authToken = generateAuthToken()
 
     const cookieSecure = c.env.COOKIE_SECURE === 'true'
     const cookieOpts = { path: '/', httpOnly: true, secure: cookieSecure, sameSite: 'Lax' as const, maxAge: 60 * 60 * 24 }

@@ -1,6 +1,6 @@
 import { eq, sql } from 'drizzle-orm'
 import type { Db } from './client'
-import { users, events, registrations, individualRegistrations, logs, oauthTokens,passwordResetOtps } from './schema'
+import { users, events, registrations, individualRegistrations, logs, oauthTokens, passwordResetOtps, authSessions, queries } from './schema'
 import type { Participant } from '../types'
 
 export type UserRow = typeof users.$inferSelect
@@ -16,6 +16,9 @@ export type IndividualRegistrationInsert = typeof individualRegistrations.$infer
 export type LogRow = typeof logs.$inferSelect
 export type OAuthTokenRow = typeof oauthTokens.$inferSelect
 export type OAuthTokenInsert = typeof oauthTokens.$inferInsert
+
+export type AuthSessionRow = typeof authSessions.$inferSelect
+export type AuthSessionInsert = typeof authSessions.$inferInsert
 
 // Password reset OTPs
 export type PasswordResetOtpRow = typeof passwordResetOtps.$inferSelect
@@ -178,6 +181,17 @@ export async function deleteIndividualRegistrationsByUser(db: Db, userId: number
     await db.delete(individualRegistrations).where(eq(individualRegistrations.userId, userId))
 }
 
+export async function getAllIndividualRegistrationsByUser(
+    db: Db,
+    userId: number
+): Promise<IndividualRegistrationRow[]> {
+
+    return await db
+        .select()
+        .from(individualRegistrations)
+        .where(eq(individualRegistrations.userId, userId))
+}
+
 // ---- logs ----
 
 export async function createLog(db: Db, reason: string, content: string): Promise<void> {
@@ -254,4 +268,95 @@ export async function deletePasswordResetOtp(
     await db
         .delete(passwordResetOtps)
         .where(eq(passwordResetOtps.email, email))
+}
+
+export async function updatePasswordResetOtpAttempts(
+    db: Db,
+    email: string,
+    attemptCount: number
+): Promise<void> {
+    await db
+        .update(passwordResetOtps)
+        .set({ attemptCount })
+        .where(eq(passwordResetOtps.email, email))
+}
+
+export async function updatePasswordResetOtp(
+    db: Db,
+    email: string,
+    data: Partial<PasswordResetOtpInsert>
+): Promise<PasswordResetOtpRow | undefined> {
+    const rows = await db
+        .update(passwordResetOtps)
+        .set(data)
+        .where(eq(passwordResetOtps.email, email))
+        .returning()
+
+    return rows[0]
+}
+
+// ---- auth sessions ----
+
+export async function createSession(
+    db: Db,
+    email: string,
+    token: string,
+    expiresAt: string
+): Promise<AuthSessionRow> {
+
+    const rows = await db
+        .insert(authSessions)
+        .values({
+            email,
+            token,
+            expiresAt,
+        })
+        .returning()
+
+    return rows[0]
+}
+
+
+export async function getSessionByToken(
+    db: Db,
+    token: string
+): Promise<AuthSessionRow | undefined> {
+
+    const rows = await db
+        .select()
+        .from(authSessions)
+        .where(eq(authSessions.token, token))
+        .limit(1)
+
+    return rows[0]
+}
+
+
+export async function deleteSession(
+    db: Db,
+    token: string
+): Promise<void> {
+
+    await db
+        .delete(authSessions)
+        .where(eq(authSessions.token, token))
+}
+
+// Query.ts Handlerß∂
+
+export type QueryRow = typeof queries.$inferSelect
+export type QueryInsert = typeof queries.$inferInsert
+
+
+export async function createQuery(
+    db: Db,
+    data: QueryInsert
+): Promise<QueryRow> {
+
+    const rows = await db
+        .insert(queries)
+        .values(data)
+        .returning()
+
+    return rows[0]
 }

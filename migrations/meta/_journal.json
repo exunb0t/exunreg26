@@ -22,6 +22,34 @@
       "when": 1786810511927,
       "tag": "0002_bent_shinobi_shaw",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "6",
+      "when": 1786963578452,
+      "tag": "0003_worried_firedrake",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "6",
+      "when": 1786964337374,
+      "tag": "0004_nifty_omega_flight",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "6",
+      "when": 1786965164974,
+      "tag": "0005_strong_zzzax",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "6",
+      "when": 1786967364206,
+      "tag": "0006_panoramic_doctor_spectrum",
+      "breakpoints": true
     }
   ]
 }

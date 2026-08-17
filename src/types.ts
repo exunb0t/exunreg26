@@ -22,7 +22,8 @@ export interface Bindings {
     GOOGLE_CLIENT_SECRET: string
 }
 
-export type AppContext = Context<{ Bindings: Bindings }>
+export type AppContext = Context<any>
+
 
 export interface ApiResponse<T = unknown> {
     status: 'success' | 'error'

@@ -32,8 +32,6 @@ export function setupRoutes() {
     app.post('/api/auth/login', handlers.login)
 
     app.post('/api/auth/logout', authHandlers.logout)
-    app.post('/api/auth/change-password', authRequired, authHandlers.changePassword)
-    app.post('/api/auth/reset-password', authHandlers.resetPassword)
 
     app.get('/api/profile', authRequired, handlers.getProfile)
     app.patch('/api/profile', authRequired, profileHandlers.updateProfile)
@@ -55,9 +53,9 @@ export function setupRoutes() {
     app.put('/api/admin/events/:id', authRequired, adminHandlers.updateEvent)
     app.delete('/api/admin/events/:id', authRequired, adminHandlers.deleteEvent)
 
-    app.get('/api/admin/users', authRequired, adminHandlers.getUserDetails)
+    app.get('/api/admin/users/:id', authRequired, adminHandlers.getUserDetails)
 
-    app.get('/api/admin/event-registrations', authRequired, adminHandlers.getEventRegistrations)
+    app.get('/api/admin/events/:id/registrations', authRequired, adminHandlers.getEventRegistrations)
     app.get('/api/admin/export', authRequired, adminHandlers.exportData)
     app.post('/api/admin/send-invite', authRequired, adminHandlers.sendInvite)
     app.post('/api/admin/import_events', authRequired, adminHandlers.importEvents)

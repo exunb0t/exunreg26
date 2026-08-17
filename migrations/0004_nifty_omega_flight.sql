@@ -1,0 +1,1 @@
+ALTER TABLE `password_reset_otps` ADD `attempt_count` integer DEFAULT 0 NOT NULL;

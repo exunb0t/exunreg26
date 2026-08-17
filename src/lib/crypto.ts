@@ -12,6 +12,12 @@ export async function hashPassword(password: string, salt: string): Promise<stri
   return sha256Hex(salt + password)
 }
 
-export async function generateAuthToken(email: string, salt: string): Promise<string> {
-  return sha256Hex(email + salt)
+export function generateAuthToken(): string {
+    const bytes = new Uint8Array(32)
+
+    crypto.getRandomValues(bytes)
+
+    return Array.from(bytes)
+        .map((b) => b.toString(16).padStart(2, '0'))
+        .join('')
 }

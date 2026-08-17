@@ -39,17 +39,6 @@ export const events = sqliteTable('events', {
 }))
 
 
-// OTP GENRATOR (EMAIL)
-
-export const passwordResetOtps = sqliteTable('password_reset_otps', {
-  id: integer('id').primaryKey({ autoIncrement: true }),
-  email: text('email').notNull(),
-  otpHash: text('otp_hash').notNull(),
-  expiresAt: text('expires_at').notNull(),
-  createdAt: text('created_at').notNull().default(sql`CURRENT_TIMESTAMP`),
-})
-
-
 export const registrations = sqliteTable('registrations', {
   id: integer('id').primaryKey({ autoIncrement: true }),
   eventId: text('event_id').notNull().references(() => events.id),
@@ -65,11 +54,28 @@ export const registrations = sqliteTable('registrations', {
 
 export const individualRegistrations = sqliteTable('individual_registrations', {
   id: integer('id').primaryKey({ autoIncrement: true }),
-  userId: integer('user_id').notNull().references(() => users.id),
+
+  userId: integer('user_id')
+    .notNull()
+    .references(() => users.id),
+
   fullname: text('fullname'),
   userEmail: text('user_email'),
-  createdAt: text('created_at').notNull().default(sql`CURRENT_TIMESTAMP`),
-  updatedAt: text('updated_at').notNull().default(sql`CURRENT_TIMESTAMP`),
+
+  phoneNumber: text('phone_number'),
+  className: text('class'),
+
+  schoolName: text('school_name'),
+  schoolCode: text('school_code'),
+  address: text('address'),
+
+  createdAt: text('created_at')
+    .notNull()
+    .default(sql`CURRENT_TIMESTAMP`),
+
+  updatedAt: text('updated_at')
+    .notNull()
+    .default(sql`CURRENT_TIMESTAMP`),
 })
 
 export const logs = sqliteTable('logs', {
@@ -79,6 +85,7 @@ export const logs = sqliteTable('logs', {
   createdAt: text('created_at').notNull().default(sql`CURRENT_TIMESTAMP`),
 })
 
+// OAUTH
 export const oauthTokens = sqliteTable('oauth_tokens', {
   provider: text('provider').primaryKey(),
   accessToken: text('access_token').notNull(),
@@ -116,3 +123,57 @@ export const usrRegs = sqliteTable('usr_regs', {
 }, (t) => ({
   usernameEventIdx: uniqueIndex('idx_usr_regs_username_event').on(t.username, t.eventId),
 }))
+
+export const authSessions = sqliteTable('auth_sessions', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+
+  email: text('email').notNull(),
+
+  token: text('token').notNull().unique(),
+
+  expiresAt: text('expires_at').notNull(),
+
+  createdAt: text('created_at')
+    .notNull()
+    .default(sql`CURRENT_TIMESTAMP`),
+})
+
+
+// OTPS
+export const passwordResetOtps = sqliteTable('password_reset_otps', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  email: text('email').notNull(),
+  otpHash: text('otp_hash').notNull(),
+  expiresAt: text('expires_at').notNull(),
+  createdAt: text('created_at').notNull().default(sql`CURRENT_TIMESTAMP`),
+
+  requestCount: integer('request_count').notNull().default(1),
+
+  requestDay: text('request_day').notNull().default(''),
+
+  attemptCount: integer('attempt_count').notNull().default(0),
+})
+
+// QUERY.ts Handler
+
+export const queries = sqliteTable('queries', {
+    id: integer('id').primaryKey({ autoIncrement: true }),
+
+    email: text('email').notNull(),
+
+    subject: text('subject').notNull(),
+
+    message: text('message').notNull(),
+
+    status: text('status')
+        .notNull()
+        .default('open'),
+
+    createdAt: text('created_at')
+        .notNull()
+        .default(sql`CURRENT_TIMESTAMP`),
+
+    updatedAt: text('updated_at')
+        .notNull()
+        .default(sql`CURRENT_TIMESTAMP`),
+})

@@ -11,13 +11,14 @@
     "db:migrate:remote": "wrangler d1 migrations apply exunreg26 --remote"
   },
   "dependencies": {
-    "hono": "^4.13.2",
-    "drizzle-orm": "^0.44.6"
+    "@eoao/nworker-mailer": "^1.2.2",
+    "drizzle-orm": "^0.44.6",
+    "hono": "^4.13.2"
   },
   "devDependencies": {
-    "wrangler": "^4.110.0",
+    "@cloudflare/workers-types": "^5.20260814.1",
     "drizzle-kit": "^0.31.6",
     "typescript": "^5.7.3",
-    "@cloudflare/workers-types": "^5.20260814.1"
+    "wrangler": "^4.110.0"
   }
 }
