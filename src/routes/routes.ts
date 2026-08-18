@@ -1,6 +1,6 @@
 import { Hono } from 'hono'
 import type { Bindings } from '../types'
-import { authRequired, getEmailFromCookie } from '../middleware/auth'
+import { adminRequired, authRequired, getEmailFromCookie } from '../middleware/auth'
 import { isAdminEmail } from '../lib/admin'
 import { jsonError } from '../lib/response'
 
@@ -31,6 +31,7 @@ export function setupRoutes() {
     app.post('/api/auth/send-otp', authHandlers.sendOTP)
     app.post('/api/auth/login', handlers.login)
     app.post('/api/auth/signup', handlers.signup)
+    app.post('/api/auth/verify-otp', authHandlers.verifyOTP)
 
     app.post('/api/auth/logout', authHandlers.logout)
 
@@ -45,21 +46,21 @@ export function setupRoutes() {
     app.post('/api/submit_registrations', authRequired, regHandlers.submitRegistrations)
     app.get('/api/summary', authRequired, summaryHandlers.getUserSummary)
 
-    app.get('/api/admin/stats', authRequired, adminHandlers.getAdminStats)
-    app.get('/api/admin/config', authRequired, adminHandlers.getAdminConfig)
+    app.get('/api/admin/stats', adminRequired, adminHandlers.getAdminStats)
+    app.get('/api/admin/config', adminRequired, adminHandlers.getAdminConfig)
 
-    app.post('/api/admin/events', authRequired, adminHandlers.createEvent)
-    app.get('/api/admin/events/:id', authRequired, adminHandlers.getAdminEvent)
+    app.post('/api/admin/events', adminRequired, adminHandlers.createEvent)
+    app.get('/api/admin/events/:id', adminRequired, adminHandlers.getAdminEvent)
 
-    app.put('/api/admin/events/:id', authRequired, adminHandlers.updateEvent)
-    app.delete('/api/admin/events/:id', authRequired, adminHandlers.deleteEvent)
+    app.put('/api/admin/events/:id', adminRequired, adminHandlers.updateEvent)
+    app.delete('/api/admin/events/:id', adminRequired, adminHandlers.deleteEvent)
 
-    app.get('/api/admin/users/:id', authRequired, adminHandlers.getUserDetails)
+    app.get('/api/admin/users/:id', adminRequired, adminHandlers.getUserDetails)
 
-    app.get('/api/admin/events/:id/registrations', authRequired, adminHandlers.getEventRegistrations)
-    app.get('/api/admin/export', authRequired, adminHandlers.exportData)
-    app.post('/api/admin/send-invite', authRequired, adminHandlers.sendInvite)
-    app.post('/api/admin/import_events', authRequired, adminHandlers.importEvents)
+    app.get('/api/admin/events/:id/registrations', adminRequired, adminHandlers.getEventRegistrations)
+    app.get('/api/admin/export', adminRequired, adminHandlers.exportData)
+    app.post('/api/admin/send-invite', adminRequired, adminHandlers.sendInvite)
+    app.post('/api/admin/import_events', adminRequired, adminHandlers.importEvents)
 
     app.post('/api/admin/sync-sheets', authRequired, async (c) => {
         const email = getEmailFromCookie(c)

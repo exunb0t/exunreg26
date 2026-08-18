@@ -39,6 +39,10 @@ export function stringifyRegistrations(regs: Record<string, Participant[]> | und
 }
 
 // ---- usrs ---
+/*
+export async function checkIfUserExists(db: Db, email: string) : Promise<boolean> {
+    const 
+}*/
 
 export async function getUserByEmail(db: Db, email: string): Promise<UserRow | undefined> {
     const rows = await db.select().from(users).where(eq(users.email, email)).limit(1)

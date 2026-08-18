@@ -1,6 +1,6 @@
 import { createMiddleware } from 'hono/factory'
 import { getCookie } from 'hono/cookie'
-
+import { isAdminEmail } from '../lib/admin'
 import type { Context } from 'hono'
 
 import type { Bindings, ApiResponse } from '../types'
@@ -60,6 +60,31 @@ export const authRequired = createMiddleware<{ Bindings: Bindings }>(
                 error: 'Authentication required'
             }
 
+            return c.json(body, 401)
+        }
+
+        await next()
+    }
+)
+
+export const adminRequired = createMiddleware<{ Bindings: Bindings}>(
+    async (c, next) => {
+        const authenticated = await isAuthenticated(c)
+
+        if (!authenticated) {
+            const body: ApiResponse = {
+                status: 'error',
+                error: 'Authentication required'
+            }
+            return c.json(body, 401)
+        }
+
+        const email = getEmailFromCookie(c)
+        if (!isAdminEmail(email, c.env)) {
+            const body: ApiResponse = {
+                status: 'error',
+                error: 'Not admin'
+            }
             return c.json(body, 401)
         }
 

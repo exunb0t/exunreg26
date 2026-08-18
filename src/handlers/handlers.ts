@@ -22,7 +22,11 @@ export async function signup(c:AppContext) {
         return jsonError(c, 'password required', 400);
 
     }
-
+    // verify if email is actually email
+    const emailRegex = /^[^@]+@[a-zA-Z]+\.[a-zA-Z]{2,}$/;
+    if (!emailRegex.test(payload.email)) {
+        return jsonError(c, 'Invalid email', 400);
+    }
     //check if user exists
     const db = getDb(c.env)
     const user_email = await queries.getUserByEmail(db, payload.email);
@@ -68,18 +72,19 @@ export async function login(c: AppContext) {
     const db = getDb(c.env)
     const user = await queries.getUserByEmail(db, payload.email)
     if (!user) {
-        return jsonError(c, 'Invalid email or password', 401)
+        return jsonError(c, 'Invalid email', 401)
     }
 
     if (!user.passwordHash) {
         return jsonError(c, 'Password login not configured for this account', 401)
     }
+    console.log("AHA: ", user.passwordHash)
 
     const salt = c.env.AUTH_SALT || ''
     const hashed = await hashPassword(payload.password, salt)
     if (hashed !== user.passwordHash) {
 
-        return jsonError(c, 'Invalid email or password', 401)
+        return jsonError(c, 'Invalid password', 401)
     }
 
     const authToken = generateAuthToken()
