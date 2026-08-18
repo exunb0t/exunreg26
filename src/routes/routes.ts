@@ -61,7 +61,7 @@ export function setupRoutes() {
     app.get('/api/admin/export', adminRequired, adminHandlers.exportData)
     app.post('/api/admin/send-invite', adminRequired, adminHandlers.sendInvite)
     app.post('/api/admin/import_events', adminRequired, adminHandlers.importEvents)
-
+    
     app.post('/api/admin/sync-sheets', authRequired, async (c) => {
         const email = getEmailFromCookie(c)
         if (!isAdminEmail(email, c.env)) {
