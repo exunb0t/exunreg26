@@ -50,6 +50,11 @@ export async function getUserById(db: Db, id: number): Promise<UserRow | undefin
     const rows = await db.select().from(users).where(eq(users.id, id)).limit(1)
     return rows[0]
 }
+export async function getUserByUsername(db: Db, username: string): Promise<UserRow | undefined> {
+    const rows = await db.select().from(users).where(eq(users.username, username)).limit(1)
+    return rows[0]
+}
+
 
 export async function getAllUsers(db: Db): Promise<UserRow[]> {
     return db.select().from(users)

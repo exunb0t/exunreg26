@@ -30,6 +30,7 @@ export function setupRoutes() {
 
     app.post('/api/auth/send-otp', authHandlers.sendOTP)
     app.post('/api/auth/login', handlers.login)
+    app.post('/api/auth/signup', handlers.signup)
 
     app.post('/api/auth/logout', authHandlers.logout)
 

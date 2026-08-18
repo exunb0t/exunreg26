@@ -8,9 +8,47 @@ import { isAdminEmail } from '../lib/admin'
 import { jsonOk, jsonError } from '../lib/response'
 import { getEmailFromCookie } from '../middleware/auth'
 import { setCookie } from 'hono/cookie'
-
+import type { UserInsert } from '../db/queries'
 export async function healthCheck(c: AppContext) {
     return jsonOk(c, { timestamp: new Date().toISOString() }, 'Server is running')
+}
+
+export async function signup(c:AppContext) {
+    const payload = await c.req.json<{ email?: string; password?: string }>().catch(() => null)
+    if (!payload?.email) {
+        return jsonError(c, 'Email required', 400);
+    }
+    if (!payload.password) {
+        return jsonError(c, 'password required', 400);
+
+    }
+
+    //check if user exists
+    const db = getDb(c.env)
+    const user_email = await queries.getUserByEmail(db, payload.email);
+    if (user_email) {
+        return jsonError(c, 'user already exists', 400);
+    }
+
+    const salty_boi = c.env.AUTH_SALT;
+    const hashed_password = await hashPassword(payload.password, salty_boi);
+
+    const user: UserInsert = {
+        email: payload.email,
+        username: payload.email,
+        passwordHash: hashed_password,
+    }
+
+    await queries.createUser(db, user)
+    const authToken = generateAuthToken()
+
+    const cookieSecure = c.env.COOKIE_SECURE === 'true'
+    const cookieOpts = { path: '/', httpOnly: true, secure: cookieSecure, sameSite: 'Lax' as const, maxAge: 60 * 60 * 24 }
+    const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString()
+    setCookie(c, 'email', payload.email, cookieOpts)
+    setCookie(c, 'auth_token', authToken, cookieOpts)
+    await queries.createSession(db, payload.email, authToken, expiresAt)
+    return jsonOk(c, { email: payload.email, token: authToken }, 'Signed up')
 }
 
 export async function login(c: AppContext) {
