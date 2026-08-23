@@ -1,6 +1,8 @@
 import { Hono } from 'hono'
 import type { Bindings } from '../types'
 import { adminRequired, authRequired, getEmailFromCookie } from '../middleware/auth'
+import { apiRateLimiter, authRateLimiter } from '../middleware/rateLimit'
+import { cacheMiddleware } from '../middleware/cache'
 import { isAdminEmail } from '../lib/admin'
 import { jsonError } from '../lib/response'
 
@@ -16,12 +18,14 @@ import * as backupHandlers from '../handlers/backup'
 export function setupRoutes() {
     const app = new Hono<{ Bindings: Bindings }>()
 
+    app.use('/api/*', apiRateLimiter)
+    app.use('/api/auth/*', authRateLimiter)
+
     app.get('/api/health', handlers.healthCheck)
 
     app.get('/api/admin/oauth2/start', authRequired, async (c) => {
         const email = getEmailFromCookie(c)
         if (!isAdminEmail(email, c.env)) {
-
             return jsonError(c, 'forbidden', 403)
         }
         return backupHandlers.startOAuth2(c)
@@ -32,14 +36,16 @@ export function setupRoutes() {
     app.post('/api/auth/login', handlers.login)
     app.post('/api/auth/signup', handlers.signup)
     app.post('/api/auth/verify-otp', authHandlers.verifyOTP)
+    app.get('/api/auth/google', authHandlers.startGoogleOAuth)
+    app.get('/api/auth/google/callback', authHandlers.handleGoogleOAuthCback)
 
     app.post('/api/auth/logout', authHandlers.logout)
 
     app.get('/api/profile', authRequired, handlers.getProfile)
     app.patch('/api/profile', authRequired, profileHandlers.updateProfile)
 
-    app.get('/api/events', handlers.getAllEvents)
-    app.get('/api/events/*', handlers.getEvent)
+    app.get('/api/events', cacheMiddleware(60), handlers.getAllEvents)
+    app.get('/api/events/*', cacheMiddleware(60), handlers.getEvent)
 
     app.post('/api/query', queryHandlers.queryHandler)
 

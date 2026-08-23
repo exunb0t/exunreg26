@@ -1,6 +1,6 @@
 import type { AppContext } from '../types'
 import { jsonOk, jsonError } from '../lib/response'
-import { deleteCookie, setCookie } from 'hono/cookie'
+import { deleteCookie, getCookie, setCookie } from 'hono/cookie'
 
 import { getDb } from '../db/client'
 import * as queries from '../db/queries'
@@ -39,226 +39,186 @@ export async function logout(c: AppContext) {
 // SEND OTP EMAIL
 
 export async function sendOTP(c: AppContext) {
-    const payload = await c.req
-        .json<{ email?: string }>()
-        .catch(() => null)
-
+    const payload = await c.req.json<{ email?: string }>().catch(() => null)
     if (!payload?.email) {
         return jsonError(c, 'Email required', 400)
     }
 
     const db = getDb(c.env)
-
     const today = new Date().toISOString().slice(0, 10)
-
-    const existingOtp = await queries.getPasswordResetOtp(
-        db,
-        payload.email
-    )
+    const existingOtp = await queries.getPasswordResetOtp(db, payload.email)
 
     let requestCount = 1
-
     if (existingOtp?.requestDay === today) {
         requestCount = existingOtp.requestCount + 1
     }
 
     if (requestCount > 10) {
-        return jsonError(
-            c,
-            'Daily OTP request limit reached. Try again tomorrow.',
-            429
-        )
+        return jsonError(c, 'Daily OTP request limit reached. Try again tomorrow.', 429)
     }
 
-    // Check whether the account exists
-    const user = await queries.getUserByEmail(db, payload.email)
+    const now = Date.now()
+    let otp: string
 
-    if (!user) {
-        return jsonError(c, 'User not found', 404)
-    }
-
-    // Generate a 6-digit OTP
-    const otp = Math.floor(
-        100000 + Math.random() * 900000
-    ).toString()
-
-    // Hash OTP before storing it
-    const otpHash = await sha256Hex(otp)
-
-    // OTP expires after 10 minutes
-    const expiresAt = new Date(
-        Date.now() + 10 * 60 * 1000
-    ).toISOString()
-
-
-    // Update existing OTP or create a new OTP
-    if (existingOtp) {
-        await queries.updatePasswordResetOtp(
-            db,
-            payload.email,
-            {
-                otpHash,
-                expiresAt,
-                requestCount,
-                requestDay: today,
-                attemptCount: 0,
-            }
-        )
+    if (existingOtp && new Date(existingOtp.expiresAt).getTime() > now) {
+        otp = existingOtp.otpHash
     } else {
-        await queries.createPasswordResetOtp(
-            db,
-            {
-                email: payload.email,
-                otpHash,
-                expiresAt,
-                requestCount,
-                requestDay: today,
-                attemptCount: 0,
-            }
-        )
+        // non deterministic
+        const randBuf = new Uint32Array(1)
+        crypto.getRandomValues(randBuf)
+        otp = String(100000 + (randBuf[0] % 900000))
     }
 
+    // expire after 15mins
+    const expiresAt = new Date(now + 15 * 60 * 1000).toISOString()
 
-    // Testing only
-    console.log('OTP:', otp)
+    if (existingOtp) {
+        await queries.updatePasswordResetOtp(db, payload.email, {
+            otpHash: otp,
+            expiresAt,
+            requestCount,
+            requestDay: today,
+            attemptCount: 0,
+        })
+    } else {
+        await queries.createPasswordResetOtp(db, {
+            email: payload.email,
+            otpHash: otp,
+            expiresAt,
+            requestCount,
+            requestDay: today,
+            attemptCount: 0,
+        })
+    }
 
-    // Email sending can remain a placeholder for now
-    await sendEmail(
-        payload.email,
-        'Exun Login OTP',
-        `Your Exun login OTP is ${otp}`,
-        c.env
-    )
-
+    await sendEmail(payload.email, 'Exun Login OTP', `Your Exun login OTP is ${otp}`, c.env)
     return jsonOk(c, null, 'OTP sent successfully')
 }
 
-
-
-// Verify OTP and log in user
-
 export async function verifyOTP(c: AppContext) {
-    const payload = await c.req
-        .json<{
-            email?: string
-            otp?: string
-        }>()
-        .catch(() => null)
-
+    const payload = await c.req.json<{ email?: string; otp?: string }>().catch(() => null)
     if (!payload?.email || !payload?.otp) {
         return jsonError(c, 'Email and OTP required', 400)
     }
 
     const db = getDb(c.env)
-
-    // Make sure the account exists
-    const user = await queries.getUserByEmail(db, payload.email)
-
-    if (!user) {
-        return jsonError(c, 'User not found', 404)
-    }
-
-    // Get the OTP stored for this email
-    const storedOtp = await queries.getPasswordResetOtp(
-        db,
-        payload.email
-    )
-
+    const storedOtp = await queries.getPasswordResetOtp(db, payload.email)
     if (!storedOtp) {
         return jsonError(c, 'No OTP found. Please request a new one', 400)
     }
 
-    // Check expiration
-    const expiresAt = new Date(
-        storedOtp.expiresAt
-    ).getTime()
-
-    if (Date.now() > expiresAt) {
-        await queries.deletePasswordResetOtp(
-            db,
-            payload.email
-        )
-
+    if (Date.now() > new Date(storedOtp.expiresAt).getTime()) {
+        await queries.deletePasswordResetOtp(db, payload.email)
         return jsonError(c, 'OTP has expired', 400)
     }
 
-
-    // Hash the OTP entered by the user
-    const otpHash = await sha256Hex(payload.otp)
-
-
-    // Compare hashes so verify otp
-    if (otpHash !== storedOtp.otpHash) {
-
+    if (payload.otp !== storedOtp.otpHash) {
         const newAttemptCount = storedOtp.attemptCount + 1
-
         if (newAttemptCount >= 10) {
-            await queries.deletePasswordResetOtp(
-                db,
-                payload.email
-            )
-
-            return jsonError(
-                c,
-                'Too many incorrect OTP attempts. Please request a new OTP.',
-                429
-            )
+            await queries.deletePasswordResetOtp(db, payload.email)
+            return jsonError(c, 'Too many incorrect OTP attempts. Please request a new OTP.', 429)
         }
-
-        await queries.updatePasswordResetOtpAttempts(
-            db,
-            payload.email,
-            newAttemptCount
-        )
-
-        return jsonError(
-            c,
-            `Invalid OTP. ${10 - newAttemptCount} attempts remaining.`,
-            401
-        )
+        await queries.updatePasswordResetOtpAttempts(db, payload.email, newAttemptCount)
+        return jsonError(c, `Invalid OTP. ${10 - newAttemptCount} attempts remaining.`, 401)
     }
 
+    await queries.deletePasswordResetOtp(db, payload.email)
 
-    // OTP has now been used, so delete it
-    await queries.deletePasswordResetOtp(
-        db,
-        payload.email
-    )
+    let user = await queries.getUserByEmail(db, payload.email)
+    if (!user) {
+        user = await queries.createUser(db, { email: payload.email, username: payload.email })
+    }
 
-
-    // Create a new random login token
     const authToken = generateAuthToken()
+    const cookieSecure = c.env.COOKIE_SECURE === 'true'
+    const cookieOpts = { path: '/', httpOnly: true, secure: cookieSecure, sameSite: 'Lax' as const, maxAge: 86400 }
 
+    await queries.createSession(db, payload.email, authToken, new Date(Date.now() + 86400 * 1000).toISOString())
+    setCookie(c, 'email', payload.email, cookieOpts)
+    setCookie(c, 'auth_token', authToken, cookieOpts)
 
-    await queries.createSession(
-        db,
-        payload.email,
-        authToken,
-        new Date(
-            Date.now() + 24 * 60 * 60 * 1000
-        ).toISOString()
-    )
+    return jsonOk(c, { email: payload.email }, 'Login successful')
+}
 
+// google oauth
+export async function startGoogleOAuth(c: AppContext) {
+    const clientId = c.env.GOOGLE_CLIENT_ID
+    if (!clientId) return jsonError(c, 'GOOGLE_CLIENT_ID not configured', 500)
 
-    // Store authentication cookies
-    setCookie(c, 'email', payload.email, {
-    httpOnly: true,
-    secure: true,
-    sameSite: 'Strict',
-    maxAge: 86400,
+    const state = crypto.randomUUID()
+    setCookie(c, 'google_oauth_state', state, {
+        path: '/',
+        httpOnly: true,
+        secure: c.env.COOKIE_SECURE === 'true',
+        sameSite: 'Lax',
+        maxAge: 300,
     })
 
-setCookie(c, 'auth_token', authToken, {
-    httpOnly: true,
-    secure: true,
-    sameSite: 'Strict',
-    maxAge: 86400,
+    const redirectUri = new URL('/api/auth/google/callback', c.req.url).toString()
+    const url = new URL('https://accounts.google.com/o/oauth2/v2/auth')
+    url.searchParams.set('client_id', clientId)
+    url.searchParams.set('redirect_uri', redirectUri)
+    url.searchParams.set('response_type', 'code')
+    url.searchParams.set('scope', 'openid email profile')
+    url.searchParams.set('state', state)
+
+    return c.redirect(url.toString(), 302)
+}
+
+export async function handleGoogleOAuthCback(c: AppContext) {
+    const code = c.req.query('code')
+    const state = c.req.query('state')
+    const expectedState = getCookie(c, 'google_oauth_state')
+    deleteCookie(c, 'google_oauth_state', { path: '/' })
+
+    if (!state || !expectedState || state !== expectedState || !code) {
+        return jsonError(c, 'Invalid OAuth state or code', 400)
+    }
+
+    const clientId = c.env.GOOGLE_CLIENT_ID
+    const clientSecret = c.env.GOOGLE_CLIENT_SECRET
+    if (!clientId || !clientSecret) return jsonError(c, 'Google OAuth credentials not configured', 500)
+
+    const redirectUri = new URL('/api/auth/google/callback', c.req.url).toString()
+    const tokenRes = await fetch('https://oauth2.googleapis.com/token', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: new URLSearchParams({
+            code,
+            client_id: clientId,
+            client_secret: clientSecret,
+            redirect_uri: redirectUri,
+            grant_type: 'authorization_code',
+        }),
     })
 
+    if (!tokenRes.ok) return jsonError(c, 'Failed token exchange with Google', 502)
+    const tokenData = await tokenRes.json<{ access_token: string }>()
 
-    return jsonOk(
-        c,
-        { email: payload.email },
-        'Login successful'
-    )
+    const userRes = await fetch('https://www.googleapis.com/oauth2/v2/userinfo', {
+        headers: { Authorization: `Bearer ${tokenData.access_token}` },
+    })
+
+    if (!userRes.ok) {
+        return jsonError(c, 'Failed to fetch Google profile', 502)
+    }
+    
+    const googleUser = await userRes.json<{ email?: string }>()
+    if (!googleUser.email) return jsonError(c, 'Google email missing', 400)
+
+    const db = getDb(c.env)
+    let user = await queries.getUserByEmail(db, googleUser.email)
+    if (!user) {
+        user = await queries.createUser(db, { email: googleUser.email, username: googleUser.email })
+    }
+
+    const authToken = generateAuthToken()
+    const cookieSecure = c.env.COOKIE_SECURE === 'true'
+    const cookieOpts = { path: '/', httpOnly: true, secure: cookieSecure, sameSite: 'Lax' as const, maxAge: 86400 }
+
+    await queries.createSession(db, googleUser.email, authToken, new Date(Date.now() + 86400 * 1000).toISOString())
+    setCookie(c, 'email', googleUser.email, cookieOpts)
+    setCookie(c, 'auth_token', authToken, cookieOpts)
+
+    return c.redirect('/', 302)
 }
