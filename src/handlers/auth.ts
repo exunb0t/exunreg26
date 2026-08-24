@@ -58,23 +58,22 @@ export async function sendOTP(c: AppContext) {
     }
 
     const now = Date.now()
-    let otp: string
+    const randBuf = new Uint32Array(1)
 
-    if (existingOtp && new Date(existingOtp.expiresAt).getTime() > now) {
-        otp = existingOtp.otpHash
-    } else {
-        // non deterministic
-        const randBuf = new Uint32Array(1)
-        crypto.getRandomValues(randBuf)
-        otp = String(100000 + (randBuf[0] % 900000))
-    }
+    crypto.getRandomValues(randBuf)
+
+    const otp = String(
+        100000 + (randBuf[0] % 900000)
+    )
+
+    const otpHash = await sha256Hex(otp)
 
     // expire after 15mins
     const expiresAt = new Date(now + 15 * 60 * 1000).toISOString()
 
     if (existingOtp) {
         await queries.updatePasswordResetOtp(db, payload.email, {
-            otpHash: otp,
+            otpHash,
             expiresAt,
             requestCount,
             requestDay: today,
@@ -83,7 +82,7 @@ export async function sendOTP(c: AppContext) {
     } else {
         await queries.createPasswordResetOtp(db, {
             email: payload.email,
-            otpHash: otp,
+            otpHash,
             expiresAt,
             requestCount,
             requestDay: today,
@@ -112,7 +111,9 @@ export async function verifyOTP(c: AppContext) {
         return jsonError(c, 'OTP has expired', 400)
     }
 
-    if (payload.otp !== storedOtp.otpHash) {
+    const otpHash = await sha256Hex(payload.otp)
+
+    if (otpHash !== storedOtp.otpHash) {
         const newAttemptCount = storedOtp.attemptCount + 1
         if (newAttemptCount >= 10) {
             await queries.deletePasswordResetOtp(db, payload.email)
