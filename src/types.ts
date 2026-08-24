@@ -20,6 +20,10 @@ export interface Bindings {
 
     GOOGLE_CLIENT_ID: string
     GOOGLE_CLIENT_SECRET: string
+
+    // ChatBot Api Key
+
+    OPENROUTER_API_KEY: string;
 }
 
 export type AppContext = Context<any>

@@ -15,6 +15,8 @@ import * as summaryHandlers from '../handlers/summary'
 import * as adminHandlers from '../handlers/admin'
 import * as backupHandlers from '../handlers/backup'
 
+
+
 export function setupRoutes() {
     const app = new Hono<{ Bindings: Bindings }>()
 
@@ -46,8 +48,11 @@ export function setupRoutes() {
 
     app.get('/api/events', cacheMiddleware(60), handlers.getAllEvents)
     app.get('/api/events/*', cacheMiddleware(60), handlers.getEvent)
-
+    
+    // Chatbot
     app.post('/api/query', queryHandlers.queryHandler)
+    app.post('/api/chat', authRequired, handlers.chatHandler)
+
 
     app.post('/api/submit_registrations', authRequired, regHandlers.submitRegistrations)
     app.get('/api/summary', authRequired, summaryHandlers.getUserSummary)
@@ -79,3 +84,6 @@ export function setupRoutes() {
 
     return app
 }
+
+
+

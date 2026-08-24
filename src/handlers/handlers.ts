@@ -176,3 +176,8 @@ export async function getEvent(c: AppContext) {
 
     return jsonError(c, 'Event not found', 404)
 }
+
+
+// chatbot
+
+export { chatHandler } from './Chat'
