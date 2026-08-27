@@ -9,10 +9,29 @@ interface RateLimitEntry {
 
 const store: Record<string, RateLimitEntry> = {}
 
-export function rateLimiter(options: { windowMs: number; maxRequests: number }): MiddlewareHandler<{ Bindings: Bindings }> {
+export function rateLimiter(options: { windowMs: number; maxRequests: number; bindingName?: 'API_RATE_LIMITER' | 'AUTH_RATE_LIMITER' }): MiddlewareHandler<{ Bindings: Bindings }> {
     return async (c, next) => {
         const ip = c.req.header('cf-connecting-ip') || c.req.header('x-forwarded-for') || 'unknown-ip'
+
+        // native cf rate limiting binding check
+        const cfBinding = options.bindingName ? c.env[options.bindingName] : c.env.API_RATE_LIMITER
+        if (cfBinding && typeof cfBinding.limit === 'function') {
+            const { success } = await cfBinding.limit({ key: ip })
+            if (!success) {
+                return jsonError(c, 'Too many rquests. Please try again later', 429)
+            }
+            await next()
+            return
+        }
+
         const now = Date.now()
+
+        // prevent mem leak by cleaning up
+        for (const k in store) {
+            if (store[k].resetTime < now) {
+                delete store[k]
+            }
+        }
 
         if (!store[ip] || store[ip].resetTime < now) {
             store[ip] = { count: 1, resetTime: now + options.windowMs }
@@ -37,7 +56,7 @@ export function rateLimiter(options: { windowMs: number; maxRequests: number }):
 }
 
 // 100 reqs per min
-export const apiRateLimiter = rateLimiter({ windowMs: 60 * 1000, maxRequests: 100 })
+export const apiRateLimiter = rateLimiter({ windowMs: 60 * 1000, maxRequests: 100, bindingName: 'API_RATE_LIMITER' })
 
 // 10 reqs per min for auth
-export const authRateLimiter = rateLimiter({ windowMs: 60 * 1000, maxRequests: 10 })
+export const authRateLimiter = rateLimiter({ windowMs: 60 * 1000, maxRequests: 10, bindingName: 'AUTH_RATE_LIMITER' })

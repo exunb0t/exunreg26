@@ -1,5 +1,9 @@
 import type { Context } from 'hono'
 
+export interface RateLimitBinding {
+    limit(options: { key: string }): Promise<{ success: boolean }>
+}
+
 export interface Bindings {
     DB: D1Database
     ASSETS: Fetcher
@@ -24,6 +28,10 @@ export interface Bindings {
     // ChatBot Api Key
 
     OPENROUTER_API_KEY: string;
+
+    // rate limiter
+    API_RATE_LIMITER?: RateLimitBinding
+    AUTH_RATE_LIMITER?: RateLimitBinding
 }
 
 export type AppContext = Context<any>

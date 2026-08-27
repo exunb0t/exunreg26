@@ -85,7 +85,7 @@ export const adminRequired = createMiddleware<{ Bindings: Bindings}>(
                 status: 'error',
                 error: 'Not admin'
             }
-            return c.json(body, 401)
+            return c.json(body, 403)
         }
 
         await next()

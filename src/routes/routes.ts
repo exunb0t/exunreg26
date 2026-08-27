@@ -25,13 +25,7 @@ export function setupRoutes() {
 
     app.get('/api/health', handlers.healthCheck)
 
-    app.get('/api/admin/oauth2/start', authRequired, async (c) => {
-        const email = getEmailFromCookie(c)
-        if (!isAdminEmail(email, c.env)) {
-            return jsonError(c, 'forbidden', 403)
-        }
-        return backupHandlers.startOAuth2(c)
-    })
+    app.get('/api/admin/oauth2/start', adminRequired, backupHandlers.startOAuth2)
     app.get('/oauth2callback', backupHandlers.handleOAuth2Callback)
 
     app.post('/api/auth/send-otp', authHandlers.sendOTP)
@@ -50,7 +44,7 @@ export function setupRoutes() {
     app.get('/api/events/*', cacheMiddleware(60), handlers.getEvent)
     
     // Chatbot
-    app.post('/api/query', queryHandlers.queryHandler)
+    app.post('/api/query', authRequired, queryHandlers.queryHandler)
     app.post('/api/chat', authRequired, handlers.chatHandler)
 
 
@@ -73,14 +67,7 @@ export function setupRoutes() {
     app.post('/api/admin/send-invite', adminRequired, adminHandlers.sendInvite)
     app.post('/api/admin/import_events', adminRequired, adminHandlers.importEvents)
     
-    app.post('/api/admin/sync-sheets', authRequired, async (c) => {
-        const email = getEmailFromCookie(c)
-        if (!isAdminEmail(email, c.env)) {
-            return jsonError(c, 'forbidden', 403)
-        }
-
-        return adminHandlers.syncSheets(c)
-    })
+    app.post('/api/admin/sync-sheets', adminRequired, adminHandlers.syncSheets)
 
     return app
 }

@@ -4,6 +4,7 @@ import { getDb } from '../db/client'
 import * as queries from '../db/queries'
 import { usrRegs } from '../db/schema'
 import { sql } from 'drizzle-orm'
+import { sendEmail } from '../lib/sendemail'
 
 
 // GET /api/admin/stats
@@ -314,9 +315,8 @@ export async function sendInvite(c: AppContext) {
     }
 
 
-    // TODO: connect email service here
-    // This will send admin invitation emails later
-
+    const inviteMessage = payload.message || 'You have been invited to the portal of Exun reg platform 2026.'
+    await sendEmail(payload.email, 'Exun 2026 Registration Platform Admin Invitation', inviteMessage, c.env)
 
     return jsonOk(
         c,
@@ -324,7 +324,7 @@ export async function sendInvite(c: AppContext) {
             email: payload.email,
             message: payload.message ?? ''
         },
-        'Invite created'
+        'Invite sent successfully!'
     )
 }
 

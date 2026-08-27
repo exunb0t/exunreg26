@@ -9,6 +9,7 @@ import { jsonOk, jsonError } from '../lib/response'
 import { getEmailFromCookie } from '../middleware/auth'
 import { setCookie } from 'hono/cookie'
 import type { UserInsert } from '../db/queries'
+import { verifyOTP } from './auth'
 export async function healthCheck(c: AppContext) {
     return jsonOk(c, { timestamp: new Date().toISOString() }, 'Server is running')
 }
@@ -62,7 +63,7 @@ export async function login(c: AppContext) {
     }
 
     if (payload.otp) {
-        return jsonError(c, 'OTP login not implemented', 501)
+        return verifyOTP(c)
     }
 
     if (!payload.password) {
@@ -78,7 +79,6 @@ export async function login(c: AppContext) {
     if (!user.passwordHash) {
         return jsonError(c, 'Password login not configured for this account', 401)
     }
-    console.log("AHA: ", user.passwordHash)
 
     const salt = c.env.AUTH_SALT || ''
     const hashed = await hashPassword(payload.password, salt)
@@ -94,6 +94,7 @@ export async function login(c: AppContext) {
 
     setCookie(c, 'email', payload.email, cookieOpts)
     setCookie(c, 'auth_token', authToken, cookieOpts)
+    await queries.createSession(db, payload.email, authToken, new Date(Date.now() + 86400 * 1000).toISOString())
 
     return jsonOk(c, { email: payload.email, token: authToken }, 'Logged in')
 }
