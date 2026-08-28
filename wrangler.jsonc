@@ -33,8 +33,15 @@
       "database_id": "00000000-0000-0000-0000-000000000000"
     }
   ],
+  "ai": {
+    "binding": "AI"
+  },
+  "triggers": {
+    "crons": ["0 */6 * * *"]
+  },
   "vars": {
     "COOKIE_SECURE": "false",
-    "ADMIN_EMAILS": "exun@dpsrkp.net"
+    "ADMIN_EMAILS": "exun@dpsrkp.net",
+    "QDRANT_COLLECTION": "exunreg26-kb"
   }
 }

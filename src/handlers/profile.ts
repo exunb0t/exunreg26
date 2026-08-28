@@ -1,80 +1,66 @@
-import type { AppContext } from '../types'
-import { notImplemented } from './_stub'
-
 import { getDb } from '../db/client'
-import * as queries from '../db/queries'
+import { jsonError, jsonOk } from '../lib/response'
 import { getEmailFromCookie } from '../middleware/auth'
-import { jsonOk, jsonError } from '../lib/response'
+import * as queries from '../db/queries'
+import type { AppContext } from '../types'
+import { hashPassword } from '../lib/crypto'
 
-
+interface UpdateProfileBody {
+    id?: string
+    username?: string
+    email?: string
+    password?: string
+    schoolCode?: string
+    fullname?: string
+    phoneNumber?: string
+    principalsEmail?: string
+    individual?: boolean
+    institutionName?: string
+    address?: string
+    principalsName?: string
+}
 
 // Update Profile by verifying the user and updating the profile fields in the database
 export async function updateProfile(c: AppContext) {
-    
-    const payload = await c.req
-        .json<{
-            fullname?: string
-            phoneNumber?: string
-            schoolCode?: string
-            principalsEmail?: string
-            institutionName?: string
-            address?: string
-            principalsName?: string
-        }>()
-        .catch(() => null)
-
-    if (!payload) {
-        return jsonError(c, 'Invalid JSON body', 400)
-    }
-
     const email = getEmailFromCookie(c)
+    const pl = await c.req.json<UpdateProfileBody>().catch(() => null)
+    if (!pl) return jsonError(c, `Invalid request body`, 400)
+
     const db = getDb(c.env)
-
     const user = await queries.getUserByEmail(db, email)
+    if (!user) return jsonError(c, 'User not found', 404)
 
-    if (!user) {
-        return jsonError(c, 'User not found', 404)
+    const patch: Record<string, unknown> = {}
+
+    if (pl.fullname !== undefined) patch.fullname = pl.fullname.trim().toUpperCase()
+    if (pl.username !== undefined) patch.username = pl.username
+    if (pl.password !== undefined) patch.passwordHash = await hashPassword(pl.password, c.env.AUTH_SALT || '')
+    if (pl.phoneNumber !== undefined) patch.phoneNumber = pl.phoneNumber.trim()
+    if (pl.institutionName !== undefined) patch.institutionName = pl.institutionName.trim().toUpperCase()
+    if (pl.principalsEmail !== undefined) patch.principalsEmail = pl.principalsEmail.trim()
+    if (pl.principalsName !== undefined) patch.principalsName = pl.principalsName.trim().toUpperCase()
+    if (pl.address !== undefined) patch.address = pl.address.trim().toUpperCase()
+
+    if (pl.individual !== undefined) {
+        const wsIndi = user.individual
+        patch.individual = pl.individual
+        if (pl.individual && !wsIndi) {
+            await queries.deleteIndividualRegistrationsByUser(db, user.id)
+            await queries.createIndividualRegistration(db, {
+                userId: user.id,
+                fullname: (pl.fullname ?? user.fullname) || '',
+                userEmail: email,
+            })
+            patch.institutionName = ""
+            patch.schoolCode = ""
+            patch.principalsName = ""
+            patch.principalsEmail = ""
+        } else if (!pl.individual && wsIndi) {
+            await queries.deleteIndividualRegistrationsByUser(db, user.id)
+        }
     }
 
-    const updates: Record<string, string> = {}
+    const updated = await queries.updateUser(db, email, patch)
+    return jsonOk(c, updated, "Profile update successfully")
 
-    if (payload.fullname !== undefined) {
-        updates.fullname = payload.fullname
-    }
-
-    if (payload.phoneNumber !== undefined) {
-        updates.phoneNumber = payload.phoneNumber
-    }
-
-    if (payload.schoolCode !== undefined) {
-        updates.schoolCode = payload.schoolCode
-    }
-
-    if (payload.principalsEmail !== undefined) {
-        updates.principalsEmail = payload.principalsEmail
-    }
-
-    if (payload.institutionName !== undefined) {
-        updates.institutionName = payload.institutionName
-    }
-
-    if (payload.address !== undefined) {
-        updates.address = payload.address
-    }
-
-    if (payload.principalsName !== undefined) {
-        updates.principalsName = payload.principalsName
-    }
-
-    if (Object.keys(updates).length === 0) {
-        return jsonError(c, 'No profile fields provided', 400)
-    }
-
-    const updatedUser = await queries.updateUser(db, email, updates)
-
-    if (!updatedUser) {
-        return jsonError(c, 'Failed to update profile', 500)
-    }
-
-    return jsonOk(c, updatedUser, 'Profile updated successfully')
 }

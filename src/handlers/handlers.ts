@@ -10,6 +10,7 @@ import { getEmailFromCookie } from '../middleware/auth'
 import { setCookie } from 'hono/cookie'
 import type { UserInsert } from '../db/queries'
 import { verifyOTP } from './auth'
+
 export async function healthCheck(c: AppContext) {
     return jsonOk(c, { timestamp: new Date().toISOString() }, 'Server is running')
 }
@@ -177,8 +178,3 @@ export async function getEvent(c: AppContext) {
 
     return jsonError(c, 'Event not found', 404)
 }
-
-
-// chatbot
-
-export { chatHandler } from './Chat'

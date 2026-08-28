@@ -154,6 +154,113 @@ export const passwordResetOtps = sqliteTable('password_reset_otps', {
   attemptCount: integer('attempt_count').notNull().default(0),
 })
 
+export const conversations = sqliteTable('conversations', {
+    id: text('id').primaryKey(),
+
+    userId: integer('user_id')
+        .notNull()
+        .references(() => users.id),
+
+    email: text('email').notNull(),
+
+    title: text('title').notNull().default('New conversation'),
+
+    status: text('status').notNull().default('active'),
+
+    messageCount: integer('message_count').notNull().default(0),
+
+    createdAt: text('created_at').notNull().default(sql`CURRENT_TIMESTAMP`),
+    updatedAt: text('updated_at').notNull().default(sql`CURRENT_TIMESTAMP`),
+}, (t) => ({
+    userIdx: index('idx_conversations_user').on(t.userId),
+}))
+
+export const chatMessages = sqliteTable('chat_messages', {
+    id: integer('id').primaryKey({ autoIncrement: true }),
+
+    conversationId: text('conversation_id')
+        .notNull()
+        .references(() => conversations.id),
+
+    role: text('role').notNull(),
+
+    content: text('content').notNull(),
+
+    createdAt: text('created_at').notNull().default(sql`CURRENT_TIMESTAMP`),
+}, (t) => ({
+    conversationIdx: index('idx_chat_messages_conversation').on(t.conversationId),
+}))
+
+export const kbSources = sqliteTable('kb_sources', {
+    id: integer('id').primaryKey({ autoIncrement: true }),
+
+    url: text('url').notNull().unique(),
+
+    docId: text('doc_id').notNull(),
+
+    title: text('title'),
+
+    contentHash: text('content_hash'),
+
+    chunkCount: integer('chunk_count').notNull().default(0),
+
+    status: text('status').notNull().default('pending'),
+
+    errorMessage: text('error_message'),
+
+    lastSyncedAt: text('last_synced_at'),
+
+    createdAt: text('created_at').notNull().default(sql`CURRENT_TIMESTAMP`),
+    updatedAt: text('updated_at').notNull().default(sql`CURRENT_TIMESTAMP`),
+})
+
+export const kbChunks = sqliteTable('kb_chunks', {
+    id: integer('id').primaryKey({ autoIncrement: true }),
+
+    sourceId: integer('source_id')
+        .notNull()
+        .references(() => kbSources.id),
+
+    chunkIndex: integer('chunk_index').notNull(),
+
+    vectorId: text('vector_id').notNull().unique(),
+
+    content: text('content').notNull(),
+
+    createdAt: text('created_at').notNull().default(sql`CURRENT_TIMESTAMP`),
+}, (t) => ({
+    sourceIdx: index('idx_kb_chunks_source').on(t.sourceId),
+}))
+
+export const tickets = sqliteTable('tickets', {
+    id: integer('id').primaryKey({ autoIncrement: true }),
+
+    conversationId: text('conversation_id')
+        .references(() => conversations.id),
+
+    userEmail: text('user_email').notNull(),
+
+    subject: text('subject').notNull(),
+
+    message: text('message').notNull(),
+
+    createdBy: text('created_by').notNull(),
+
+    status: text('status').notNull().default('open'),
+
+    adminReply: text('admin_reply'),
+
+    repliedBy: text('replied_by'),
+
+    repliedAt: text('replied_at'),
+
+    createdAt: text('created_at').notNull().default(sql`CURRENT_TIMESTAMP`),
+    updatedAt: text('updated_at').notNull().default(sql`CURRENT_TIMESTAMP`),
+}, (t) => ({
+    statusIdx: index('idx_tickets_status').on(t.status),
+    conversationIdx: index('idx_tickets_conversation').on(t.conversationId),
+}))
+
 // QUERY.ts Handler
 
 export const queries = sqliteTable('queries', {

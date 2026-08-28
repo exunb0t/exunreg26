@@ -4,6 +4,8 @@ import { secureHeaders } from 'hono/secure-headers'
 import type { Bindings } from './types'
 import { logger } from './middleware/logger'
 import { setupRoutes } from './routes/routes'
+import { getDb } from './db/client'
+import { syncAllKbSources } from './lib/kb'
 
 const app = new Hono<{ Bindings: Bindings }>()
 
@@ -17,4 +19,10 @@ app.use('*', secureHeaders({
 
 app.route('/', setupRoutes())
 
-export default app
+export default {
+    fetch: app.fetch,
+    async scheduled(_event: ScheduledEvent, env: Bindings) {
+        const db = getDb(env)
+        await syncAllKbSources(db, env)
+    },
+}

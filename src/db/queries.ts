@@ -1,6 +1,6 @@
-import { eq, sql } from 'drizzle-orm'
+import { and, desc, eq, sql } from 'drizzle-orm'
 import type { Db } from './client'
-import { users, events, registrations, individualRegistrations, logs, oauthTokens, passwordResetOtps, authSessions, queries } from './schema'
+import { users, events, registrations, individualRegistrations, logs, oauthTokens, passwordResetOtps, authSessions, queries, conversations, chatMessages, kbSources, kbChunks, tickets } from './schema'
 import type { Participant } from '../types'
 
 export type UserRow = typeof users.$inferSelect
@@ -367,5 +367,166 @@ export async function createQuery(
         .values(data)
         .returning()
 
+    return rows[0]
+}
+
+export type ConversationRow = typeof conversations.$inferSelect
+export type ConversationInsert = typeof conversations.$inferInsert
+export type ChatMessageRow = typeof chatMessages.$inferSelect
+export type ChatMessageInsert = typeof chatMessages.$inferInsert
+
+export async function createConversation(db: Db, data: ConversationInsert): Promise<ConversationRow> {
+    const rows = await db.insert(conversations).values(data).returning()
+    return rows[0]
+}
+
+export async function getConversationById(db: Db, id: string): Promise<ConversationRow | undefined> {
+    const rows = await db.select().from(conversations).where(eq(conversations.id, id)).limit(1)
+    return rows[0]
+}
+
+export async function getConversationsByUser(db: Db, userId: number): Promise<ConversationRow[]> {
+    return db
+        .select()
+        .from(conversations)
+        .where(eq(conversations.userId, userId))
+        .orderBy(desc(conversations.updatedAt))
+}
+
+export async function updateConversation(
+    db: Db,
+    id: string,
+    data: Partial<ConversationInsert>
+): Promise<ConversationRow | undefined> {
+    const rows = await db
+        .update(conversations)
+        .set({ ...data, updatedAt: sql`CURRENT_TIMESTAMP` })
+        .where(eq(conversations.id, id))
+        .returning()
+    return rows[0]
+}
+
+export async function deleteConversation(db: Db, id: string): Promise<void> {
+    await db.delete(chatMessages).where(eq(chatMessages.conversationId, id))
+    await db.delete(conversations).where(eq(conversations.id, id))
+}
+
+export async function createChatMessage(db: Db, data: ChatMessageInsert): Promise<ChatMessageRow> {
+    const rows = await db.insert(chatMessages).values(data).returning()
+    return rows[0]
+}
+
+export async function getMessagesByConversation(db: Db, conversationId: string): Promise<ChatMessageRow[]> {
+    return db
+        .select()
+        .from(chatMessages)
+        .where(eq(chatMessages.conversationId, conversationId))
+        .orderBy(chatMessages.id)
+}
+
+export async function getRecentMessages(db: Db, conversationId: string, limit: number): Promise<ChatMessageRow[]> {
+    const rows = await db
+        .select()
+        .from(chatMessages)
+        .where(eq(chatMessages.conversationId, conversationId))
+        .orderBy(desc(chatMessages.id))
+        .limit(limit)
+    return rows.reverse()
+}
+
+export type KbSourceRow = typeof kbSources.$inferSelect
+export type KbSourceInsert = typeof kbSources.$inferInsert
+export type KbChunkRow = typeof kbChunks.$inferSelect
+export type KbChunkInsert = typeof kbChunks.$inferInsert
+
+export async function createKbSource(db: Db, data: KbSourceInsert): Promise<KbSourceRow> {
+    const rows = await db.insert(kbSources).values(data).returning()
+    return rows[0]
+}
+
+export async function getKbSourceByUrl(db: Db, url: string): Promise<KbSourceRow | undefined> {
+    const rows = await db.select().from(kbSources).where(eq(kbSources.url, url)).limit(1)
+    return rows[0]
+}
+
+export async function getKbSourceById(db: Db, id: number): Promise<KbSourceRow | undefined> {
+    const rows = await db.select().from(kbSources).where(eq(kbSources.id, id)).limit(1)
+    return rows[0]
+}
+
+export async function getAllKbSources(db: Db): Promise<KbSourceRow[]> {
+    return db.select().from(kbSources).orderBy(kbSources.id)
+}
+
+export async function updateKbSource(
+    db: Db,
+    id: number,
+    data: Partial<KbSourceInsert>
+): Promise<KbSourceRow | undefined> {
+    const rows = await db
+        .update(kbSources)
+        .set({ ...data, updatedAt: sql`CURRENT_TIMESTAMP` })
+        .where(eq(kbSources.id, id))
+        .returning()
+    return rows[0]
+}
+
+export async function deleteKbSource(db: Db, id: number): Promise<void> {
+    await db.delete(kbChunks).where(eq(kbChunks.sourceId, id))
+    await db.delete(kbSources).where(eq(kbSources.id, id))
+}
+
+export async function getKbChunksBySource(db: Db, sourceId: number): Promise<KbChunkRow[]> {
+    return db.select().from(kbChunks).where(eq(kbChunks.sourceId, sourceId)).orderBy(kbChunks.chunkIndex)
+}
+
+export async function createKbChunks(db: Db, data: KbChunkInsert[]): Promise<void> {
+    if (data.length === 0) return
+    await db.insert(kbChunks).values(data)
+}
+
+export async function deleteKbChunksBySource(db: Db, sourceId: number): Promise<void> {
+    await db.delete(kbChunks).where(eq(kbChunks.sourceId, sourceId))
+}
+
+export type TicketRow = typeof tickets.$inferSelect
+export type TicketInsert = typeof tickets.$inferInsert
+
+export async function createTicket(db: Db, data: TicketInsert): Promise<TicketRow> {
+    const rows = await db.insert(tickets).values(data).returning()
+    return rows[0]
+}
+
+export async function getTicketById(db: Db, id: number): Promise<TicketRow | undefined> {
+    const rows = await db.select().from(tickets).where(eq(tickets.id, id)).limit(1)
+    return rows[0]
+}
+
+export async function getAllTickets(db: Db, status?: string): Promise<TicketRow[]> {
+    if (status) {
+        return db.select().from(tickets).where(eq(tickets.status, status)).orderBy(desc(tickets.createdAt))
+    }
+    return db.select().from(tickets).orderBy(desc(tickets.createdAt))
+}
+
+export async function updateTicket(
+    db: Db,
+    id: number,
+    data: Partial<TicketInsert>
+): Promise<TicketRow | undefined> {
+    const rows = await db
+        .update(tickets)
+        .set({ ...data, updatedAt: sql`CURRENT_TIMESTAMP` })
+        .where(eq(tickets.id, id))
+        .returning()
+    return rows[0]
+}
+
+export async function getOpenTicketByConversation(db: Db, conversationId: string): Promise<TicketRow | undefined> {
+    const rows = await db
+        .select()
+        .from(tickets)
+        .where(and(eq(tickets.conversationId, conversationId), eq(tickets.status, 'open')))
+        .limit(1)
     return rows[0]
 }

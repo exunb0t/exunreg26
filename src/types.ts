@@ -28,6 +28,16 @@ export interface Bindings {
     // ChatBot Api Key
 
     OPENROUTER_API_KEY: string;
+    GROQ_API_KEY: string;
+
+    TICKET_NOTIFY_EMAIL: string
+    GOOGLE_DOC_URLS: string
+
+    QDRANT_URL: string
+    QDRANT_API_KEY: string
+    QDRANT_COLLECTION: string
+
+    AI: Ai
 
     // rate limiter
     API_RATE_LIMITER?: RateLimitBinding
