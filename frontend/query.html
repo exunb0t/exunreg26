@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Queries | Exun 2026</title>
+    <link rel="icon" href="/assets/favicon.ico" type="image/x-icon" />
+    <link rel="stylesheet" href="/css/main.css" />
+    <link rel="stylesheet" href="/css/navbar.css" />
+    <link rel="stylesheet" href="/css/footer.css" />
+    <link rel="stylesheet" href="/css/query.css" />
+    <link rel="stylesheet" href="/css/chat.css" />
+  </head>
+  <body data-page="query">
+    <div id="navbar-container"></div>
+    <main class="query-detail-page">
+      <div class="query-detail-header">
+        <div class="container">
+          <h1 class="query-detail-title">Hi, how can we help?</h1>
+          <form id="query-form" class="query-search" autocomplete="off">
+            <div class="query-search-box">
+              <input
+                id="query-input"
+                class="query-search-input"
+                type="search"
+                placeholder="Ask Anything"
+                aria-label="Search queries"
+                autocomplete="off"
+              />
+              <button
+                id="querySearchBtn"
+                class="query-search-button"
+                type="submit"
+                aria-label="Send search"
+              >
+                Send
+              </button>
+            </div>
+            <input id="query-subject" class="form-input" type="text" placeholder="Subject" aria-label="Subject" autocomplete="off" />
+          </form>
+          <p class="query-detail-subtitle">Exun 2026 support tickets</p>
+        </div>
+      </div>
+      <section class="faq-section">
+        <div class="container" id="faqContainer">
+          <h2 class="faq-title">Frequently Asked Questions</h2>
+        </div>
+      </section>
+      <section class="query-results-section">
+        <div class="container" id="results">
+          <p class="text-muted">No answers yet. Ask a question to get started.</p>
+        </div>
+      </section>
+    </main>
+    <div id="footer-container"></div>
+
+    <script src="/js/api.js"></script>
+    <script src="/js/utils.js"></script>
+    <script src="/js/navigation.js"></script>
+    <script src="/js/query.js"></script>
+    <script>
+      document.addEventListener("DOMContentLoaded", async function () {
+        try {
+          await Utils.loadComponent("/components/navbar.html", document.getElementById("navbar-container"));
+          await Utils.loadComponent("/components/footer.html", document.getElementById("footer-container"));
+        } catch (e) {}
+      });
+    </script>
+  </body>
+</html>

@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Login | Exun 2026</title>
+    <link rel="icon" href="/assets/favicon.ico" type="image/x-icon" />
+    <link rel="stylesheet" href="/css/main.css" />
+    <link rel="stylesheet" href="/css/login.css" />
+    <link rel="stylesheet" href="/css/toast.css" />
+  </head>
+  <body data-page="login">
+    <main class="login-page">
+      <div class="login-container">
+        <div class="login-header">
+          <img src="/assets/exun.png" alt="Exun Clan" class="login-logo" />
+          <h1 class="login-title" id="auth-title">Welcome to Exun 2026</h1>
+          <p class="login-subtitle" id="auth-subtitle">
+            Sign in with a one-time passcode sent to your email
+          </p>
+        </div>
+
+        <div id="auth-container">
+          <form class="login-form" id="auth-form">
+            <div class="form-group">
+              <label for="email" class="form-label">Email Address</label>
+              <input
+                type="email"
+                id="email"
+                name="email"
+                class="form-input"
+                placeholder="Enter your email address"
+                autocomplete="email"
+                required
+              />
+              <div id="email-error" class="form-error"></div>
+            </div>
+            <button type="submit" class="login-btn" id="auth-submit">
+              Send OTP
+            </button>
+          </form>
+          <div id="auth-status" class="login-status" aria-live="polite"></div>
+        </div>
+
+        <div id="otp-container" style="display: none">
+          <div class="login-header">
+            <h2 class="login-title">Verify Your Email</h2>
+            <p class="login-subtitle">
+              We've sent a 6-digit code to <strong id="otp-email"></strong>
+            </p>
+            <p class="login-subtitle" id="otp-meta"></p>
+          </div>
+
+          <form class="login-form" id="otp-form" autocomplete="off">
+            <div class="form-group">
+              <label class="form-label">Enter OTP</label>
+              <div class="otp-container">
+                <input type="text" class="otp-input" maxlength="1" inputmode="numeric" autocomplete="one-time-code" />
+                <input type="text" class="otp-input" maxlength="1" inputmode="numeric" autocomplete="off" />
+                <input type="text" class="otp-input" maxlength="1" inputmode="numeric" autocomplete="off" />
+                <input type="text" class="otp-input" maxlength="1" inputmode="numeric" autocomplete="off" />
+                <input type="text" class="otp-input" maxlength="1" inputmode="numeric" autocomplete="off" />
+                <input type="text" class="otp-input" maxlength="1" inputmode="numeric" autocomplete="off" />
+              </div>
+            </div>
+            <button type="submit" class="login-btn">Verify OTP</button>
+          </form>
+
+          <div class="otp-resend">
+            <a href="#" class="otp-resend-link" id="resend-otp">Resend OTP</a>
+            <span class="otp-separator"> · </span>
+            <a href="#" class="otp-resend-link" id="change-email">Use a different email</a>
+          </div>
+          <div id="otp-status" class="login-status" aria-live="polite"></div>
+        </div>
+      </div>
+    </main>
+
+    <script src="/js/api.js"></script>
+    <script src="/js/utils.js"></script>
+    <script src="/js/login.js"></script>
+  </body>
+</html>

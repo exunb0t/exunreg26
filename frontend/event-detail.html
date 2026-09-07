@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Event | Exun 2026</title>
+    <link rel="icon" href="/assets/favicon.ico" type="image/x-icon" />
+
+    <link rel="stylesheet" href="/css/main.css" />
+    <link rel="stylesheet" href="/css/event-detail.css" />
+    <link rel="stylesheet" href="/css/toast.css" />
+    <link rel="stylesheet" href="/css/navbar.css" />
+    <link rel="stylesheet" href="/css/footer.css" />
+    <link rel="stylesheet" href="/css/query.css" />
+    <link rel="stylesheet" href="/css/chat.css" />
+  </head>
+  <body data-page="event-detail">
+    <div id="navbar-container"></div>
+
+    <main class="event-detail-page">
+      <div class="container">
+        <h1 class="event-detail-heading" id="event-heading">Loading...</h1>
+        <div class="event-detail-content">
+          <section class="event-detail-main">
+            <h2 class="event-detail-main__title">About This Event</h2>
+            <img
+              src="/assets/exun_base.webp"
+              alt="Event"
+              class="event-detail__image"
+              id="event-image"
+            />
+            <div class="event-description" id="event-description">
+              <p>Loading details...</p>
+            </div>
+          </section>
+
+          <aside class="event-detail-sidebar">
+            <div class="event-info-card">
+              <h3 class="event-info-card__title">Event Information</h3>
+              <div class="event-info" id="event-info">
+                <div class="loading-placeholder">Loading...</div>
+              </div>
+            </div>
+
+            <div class="event-actions">
+              <button class="event-actions__back" data-action="back-to-events" id="back-btn">
+                <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><path d="M14 6l-6 6 6 6z" fill="currentColor"/></svg>
+                <span>Back</span>
+              </button>
+              <button class="event-actions__register" id="register-event-btn">
+                Register
+              </button>
+            </div>
+          </aside>
+        </div>
+      </div>
+    </main>
+    <div id="footer-container"></div>
+
+    <script src="/js/api.js"></script>
+    <script src="/js/utils.js"></script>
+    <script src="/js/navigation.js"></script>
+    <script src="/js/event-detail.js"></script>
+    <script>
+      document.addEventListener("DOMContentLoaded", async function () {
+        try {
+          await Utils.loadComponent("/components/navbar.html", document.getElementById("navbar-container"));
+          await Utils.loadComponent("/components/footer.html", document.getElementById("footer-container"));
+        } catch (e) {}
+      });
+    </script>
+  </body>
+</html>

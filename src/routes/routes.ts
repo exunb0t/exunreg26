@@ -1,11 +1,9 @@
 import { Hono } from 'hono'
-import type { Bindings } from '../types'
-import { adminRequired, authRequired, getEmailFromCookie } from '../middleware/auth'
-import { apiRateLimiter, authRateLimiter } from '../middleware/rateLimit'
-import { cacheMiddleware } from '../middleware/cache'
-import { isAdminEmail } from '../lib/admin'
+import type { Bindings, AppContext } from '../types'
 import { jsonError } from '../lib/response'
-
+import { adminRequired, authRequired } from '../middleware/auth'
+import { apiRateLimiter, authRateLimiter, chatRateLimiter } from '../middleware/rateLimit'
+import { cacheMiddleware } from '../middleware/cache'
 import * as handlers from '../handlers/handlers'
 import * as authHandlers from '../handlers/auth'
 import * as profileHandlers from '../handlers/profile'
@@ -18,15 +16,29 @@ import * as chatHandlers from '../handlers/chat'
 import * as adminTicketHandlers from '../handlers/adminTickets'
 import * as adminKbHandlers from '../handlers/adminKb'
 
+export function serveAsset(c: AppContext, path: string) {
+    const url = new URL(c.req.url)
+    url.pathname = path
+    return c.env.ASSETS.fetch(new Request(url.toString(), c.req.raw))
+}
 
+export function notFoundHandler(c: AppContext) {
+    const pathname = new URL(c.req.url).pathname
+    if (pathname.startsWith('/api/')) return jsonError(c, 'Not found', 404)
+    const last = pathname.split('/').pop() ?? ''
+    if (last.includes('.')) return serveAsset(c, pathname)
+    return serveAsset(c, '/404.html')
+}
 
 export function setupRoutes() {
     const app = new Hono<{ Bindings: Bindings }>()
 
     app.use('/api/*', apiRateLimiter)
     app.use('/api/auth/*', authRateLimiter)
+    app.use('/api/chat/*', chatRateLimiter)
 
     app.get('/api/health', handlers.healthCheck)
+    app.get('/api/auth/session', authHandlers.getSession)
 
     app.get('/api/admin/oauth2/start', adminRequired, backupHandlers.startOAuth2)
     app.get('/oauth2callback', backupHandlers.handleOAuth2Callback)
@@ -44,9 +56,10 @@ export function setupRoutes() {
     app.patch('/api/profile', authRequired, profileHandlers.updateProfile)
 
     app.get('/api/events', cacheMiddleware(60), handlers.getAllEvents)
+    app.get('/api/events/detail', cacheMiddleware(60), handlers.getEvent)
+    app.get('/api/events/:id', cacheMiddleware(60), handlers.getEvent)
     app.get('/api/events/*', cacheMiddleware(60), handlers.getEvent)
-    
-    // Chatbot
+
     app.post('/api/query', authRequired, queryHandlers.queryHandler)
 
     app.post('/api/chat/conversations', authRequired, chatHandlers.createConversation)
@@ -56,8 +69,9 @@ export function setupRoutes() {
     app.post('/api/chat/conversations/:id/messages', authRequired, chatHandlers.sendMessage)
     app.post('/api/chat/conversations/:id/escalate', authRequired, chatHandlers.escalateConversation)
 
-
     app.post('/api/submit_registrations', authRequired, regHandlers.submitRegistrations)
+    app.put('/api/submit_registrations', authRequired, regHandlers.updateRegistration)
+    app.delete('/api/submit_registrations', authRequired, regHandlers.deleteRegistration)
     app.get('/api/summary', authRequired, summaryHandlers.getUserSummary)
 
     app.get('/api/admin/stats', adminRequired, adminHandlers.getAdminStats)
@@ -75,7 +89,7 @@ export function setupRoutes() {
     app.get('/api/admin/export', adminRequired, adminHandlers.exportData)
     app.post('/api/admin/send-invite', adminRequired, adminHandlers.sendInvite)
     app.post('/api/admin/import_events', adminRequired, adminHandlers.importEvents)
-    
+
     app.post('/api/admin/sync-sheets', adminRequired, adminHandlers.syncSheets)
 
     app.get('/api/admin/tickets', adminRequired, adminTicketHandlers.listTickets)
@@ -90,8 +104,16 @@ export function setupRoutes() {
     app.get('/api/admin/kb/sources/:id/chunks', adminRequired, adminKbHandlers.getSourceChunks)
     app.post('/api/admin/kb/sync', adminRequired, adminKbHandlers.syncSources)
 
+    app.get('/', (c) => serveAsset(c, '/index.html'))
+    app.get('/events', (c) => serveAsset(c, '/events.html'))
+    app.get('/login', (c) => serveAsset(c, '/login.html'))
+    app.get('/summary', (c) => serveAsset(c, '/summary.html'))
+    app.get('/complete', (c) => serveAsset(c, '/complete.html'))
+    app.get('/admin', (c) => serveAsset(c, '/admin.html'))
+    app.get('/brochure', (c) => serveAsset(c, '/brochure.html'))
+    app.get('/query', (c) => serveAsset(c, '/query.html'))
+    app.get('/event-detail', (c) => serveAsset(c, '/event-detail.html'))
+    app.get('/event/:slug', (c) => serveAsset(c, '/event-detail.html'))
+
     return app
 }
-
-
-

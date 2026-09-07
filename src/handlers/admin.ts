@@ -2,9 +2,51 @@ import type { AppContext } from '../types'
 import { jsonOk, jsonError } from '../lib/response'
 import { getDb } from '../db/client'
 import * as queries from '../db/queries'
+import type { EventInsert } from '../db/queries'
 import { usrRegs } from '../db/schema'
 import { sql } from 'drizzle-orm'
 import { sendEmail } from '../lib/sendemail'
+import { clearResponseCache } from '../middleware/cache'
+import { encryptSecret, decryptSecret } from '../lib/tokenCrypto'
+import { parseLimit } from '../lib/paging'
+
+const EVENT_TEXT_FIELDS = ['name', 'image', 'eligibility', 'mode', 'dates', 'descriptionLong', 'descriptionShort'] as const
+const EVENT_BOOL_FIELDS = ['openToAll', 'independentRegistration'] as const
+const EVENT_NUM_FIELDS = ['participants', 'points'] as const
+
+function pickEventFields(payload: unknown): { ok: true; data: EventInsert } | { ok: false; error: string } {
+    if (!payload || typeof payload !== 'object' || Array.isArray(payload)) {
+        return { ok: false, error: 'Invalid event data' }
+    }
+
+    const input = payload as Record<string, unknown>
+    const data: Record<string, unknown> = {}
+
+    for (const field of EVENT_TEXT_FIELDS) {
+        if (input[field] !== undefined) {
+            if (typeof input[field] !== 'string') return { ok: false, error: `Field ${field} must be a string` }
+            data[field] = input[field]
+        }
+    }
+
+    for (const field of EVENT_BOOL_FIELDS) {
+        if (input[field] !== undefined) {
+            if (typeof input[field] !== 'boolean') return { ok: false, error: `Field ${field} must be a boolean` }
+            data[field] = input[field]
+        }
+    }
+
+    for (const field of EVENT_NUM_FIELDS) {
+        if (input[field] !== undefined) {
+            if (typeof input[field] !== 'number' || !Number.isFinite(input[field]) || (input[field] as number) < 0) {
+                return { ok: false, error: `Field ${field} must be a non-negative number` }
+            }
+            data[field] = input[field]
+        }
+    }
+
+    return { ok: true, data: data as EventInsert }
+}
 
 
 // GET /api/admin/stats
@@ -12,16 +54,18 @@ export async function getAdminStats(c: AppContext) {
 
     const db = getDb(c.env)
 
-    const users = await queries.getAllUsers(db)
-    const events = await queries.getAllEvents(db)
-    const registrations = await queries.getAllRegistrations(db)
+    const [userCount, eventCount, registrationCount] = await Promise.all([
+        queries.countUsers(db),
+        queries.countEvents(db),
+        queries.countRegistrations(db),
+    ])
 
     return jsonOk(
         c,
         {
-            users: users.length,
-            events: events.length,
-            registrations: registrations.length,
+            users: userCount,
+            events: eventCount,
+            registrations: registrationCount,
         },
         'Admin Stats'
     )
@@ -54,20 +98,37 @@ export async function createEvent(c: AppContext) {
         .json()
         .catch(() => null)
 
-    if (!payload) {
+    const picked = pickEventFields(payload)
+    if (!picked.ok) {
         return jsonError(
             c,
-            'Invalid event data',
+            picked.error,
             400
         )
     }
 
+    if (typeof payload.id !== 'string' || !payload.id) {
+        return jsonError(
+            c,
+            'Event id is required',
+            400
+        )
+    }
+
+    if (typeof picked.data.name !== 'string' || !picked.data.name.trim()) {
+        return jsonError(
+            c,
+            'Event name is required',
+            400
+        )
+    }
 
     const event = await queries.createEvent(
         db,
-        payload
+        { ...picked.data, id: payload.id }
     )
 
+    clearResponseCache()
 
     return jsonOk(
         c,
@@ -140,10 +201,19 @@ export async function updateEvent(c: AppContext) {
         .catch(() => null)
 
 
-    if (!payload) {
+    const picked = pickEventFields(payload)
+    if (!picked.ok) {
         return jsonError(
             c,
-            'Invalid event data',
+            picked.error,
+            400
+        )
+    }
+
+    if (Object.keys(picked.data).length === 0) {
+        return jsonError(
+            c,
+            'No event fields provided',
             400
         )
     }
@@ -152,7 +222,7 @@ export async function updateEvent(c: AppContext) {
     const event = await queries.updateEvent(
         db,
         id,
-        payload
+        picked.data
     )
 
 
@@ -164,6 +234,7 @@ export async function updateEvent(c: AppContext) {
         )
     }
 
+    clearResponseCache()
 
     return jsonOk(
         c,
@@ -191,11 +262,35 @@ export async function deleteEvent(c: AppContext) {
      }
 
 
+    const existing = await queries.getEventById(
+        db,
+        id
+    )
+
+    if (!existing) {
+        return jsonError(
+            c,
+            'Event not found',
+            404
+        )
+    }
+
+    await queries.deleteRegistrationsByEvent(
+        db,
+        id
+    )
+
+    await queries.deleteUsrRegsByEvent(
+        db,
+        id
+    )
+
     await queries.deleteEvent(
         db,
         id
     )
 
+    clearResponseCache()
 
     return jsonOk(
         c,
@@ -214,6 +309,14 @@ export async function getUserDetails(c: AppContext) {
         c.req.param('id')
     )
 
+    if (!Number.isInteger(id)) {
+        return jsonError(
+            c,
+            'Valid user ID required',
+            400
+        )
+    }
+
 
     const user = await queries.getUserById(
         db,
@@ -230,9 +333,10 @@ export async function getUserDetails(c: AppContext) {
     }
 
 
+    const { passwordHash: _removed, ...safeUser } = user
     return jsonOk(
         c,
-        user,
+        safeUser,
         'User details'
     )
 }
@@ -245,20 +349,22 @@ export async function getEventRegistrations(c: AppContext) {
 
     const eventId = c.req.param('id')
 
+    if (!eventId) {
+        return jsonError(
+            c,
+            'Event ID required',
+            400
+        )
+    }
+
 
     const registrations =
-        await queries.getAllRegistrations(db)
-
-
-    const filtered =
-        registrations.filter(
-            r => r.eventId === eventId
-        )
+        await queries.getRegistrationsByEvent(db, eventId, parseLimit(c, 500, 2000))
 
 
     return jsonOk(
         c,
-        filtered,
+        registrations,
         'Event registrations'
     )
 }
@@ -271,20 +377,25 @@ export async function exportData(c: AppContext) {
 
     const db = getDb(c.env)
 
+    const limit = parseLimit(c, 1000, 5000)
+
     const users =
-        await queries.getAllUsers(db)
+        await queries.getAllUsers(db, limit)
 
     const registrations =
-        await queries.getAllRegistrations(db)
+        await queries.getAllRegistrations(db, limit)
 
     const events =
-        await queries.getAllEvents(db)
+        await queries.getAllEvents(db, limit)
 
 
     return jsonOk(
         c,
         {
-            users,
+            users: users.map((u) => {
+                const { passwordHash: _removed, ...safeUser } = u
+                return safeUser
+            }),
             events,
             registrations
         },
@@ -310,6 +421,15 @@ export async function sendInvite(c: AppContext) {
         return jsonError(
             c,
             'Email required',
+            400
+        )
+    }
+
+    const emailRegex = /^[^@]+@[a-zA-Z]+\.[a-zA-Z]{2,}$/
+    if (!emailRegex.test(payload.email)) {
+        return jsonError(
+            c,
+            'Invalid email',
             400
         )
     }
@@ -355,19 +475,52 @@ export async function importEvents(c: AppContext) {
 
 
     const createdEvents = []
+    const pending: { id: string; data: EventInsert }[] = []
 
 
-    for (const event of payload.events) {
+    for (let i = 0; i < payload.events.length; i++) {
+        const event = payload.events[i]
+
+        const picked = pickEventFields(event)
+        if (!picked.ok) {
+            return jsonError(
+                c,
+                `Event at index ${i}: ${picked.error}`,
+                400
+            )
+        }
+
+        if (typeof event.id !== 'string' || !event.id) {
+            return jsonError(
+                c,
+                `Event at index ${i}: id is required`,
+                400
+            )
+        }
+
+        if (typeof picked.data.name !== 'string' || !picked.data.name.trim()) {
+            return jsonError(
+                c,
+                `Event at index ${i}: name is required`,
+                400
+            )
+        }
+
+        pending.push({ id: event.id, data: picked.data })
+    }
+
+    for (const event of pending) {
 
         const created =
             await queries.createEvent(
                 db,
-                event
+                { ...event.data, id: event.id }
             )
 
         createdEvents.push(created)
     }
 
+    clearResponseCache()
 
     return jsonOk(
         c,
@@ -392,18 +545,30 @@ export async function syncSheets(c: AppContext) {
         return jsonError(c, 'spreadsheetId is required', 400)
     }
 
-    const range = payload.range || 0;
+    if (!/^[A-Za-z0-9-_]+$/.test(payload.spreadsheetId)) {
+        return jsonError(c, 'Invalid spreadsheetId', 400)
+    }
+
+    const range = payload.range || 'A1:Z1000';
 
     const token = await queries.getOAuthToken(db, 'google_drive')
     if (!token) {
         return jsonError(c, 'Google account not connected', 400)
     }
 
-    let accessToken = token.accessToken
+    const salt = c.env.AUTH_SALT || ''
+    let accessToken: string
+    let refreshToken: string | null | undefined
+    try {
+        accessToken = await decryptSecret(token.accessToken, salt)
+        refreshToken = token.refreshToken ? await decryptSecret(token.refreshToken, salt) : token.refreshToken
+    } catch {
+        return jsonError(c, 'Stored Google credentials are invalid. Please reconnect.', 500)
+    }
     const now = new Date()
     const expiresAt = token.expiresAt ? new Date(token.expiresAt) : null
 
-    if (expiresAt && expiresAt.getTime() <= now.getTime() && token.refreshToken) {
+    if (expiresAt && expiresAt.getTime() <= now.getTime() && refreshToken) {
 
         const clientId = c.env.GOOGLE_CLIENT_ID
         const clientSecret = c.env.GOOGLE_CLIENT_SECRET
@@ -414,7 +579,7 @@ export async function syncSheets(c: AppContext) {
         const refreshBody = new URLSearchParams({
             client_id: clientId,
             client_secret: clientSecret,
-            refresh_token: token.refreshToken,
+            refresh_token: refreshToken,
             grant_type: 'refresh_token',
         })
 
@@ -432,7 +597,7 @@ export async function syncSheets(c: AppContext) {
                 : null
             await queries.upsertOAuthToken(db, {
                 provider: 'google_drive',
-                accessToken: accessToken,
+                accessToken: await encryptSecret(accessToken, salt),
                 refreshToken: token.refreshToken,
                 scope: token.scope,
                 tokenType: token.tokenType,

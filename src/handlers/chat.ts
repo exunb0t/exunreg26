@@ -2,7 +2,9 @@ import type { AppContext } from '../types'
 import { jsonOk, jsonError } from '../lib/response'
 import { getDb } from '../db/client'
 import * as queries from '../db/queries'
+import { sql } from 'drizzle-orm'
 import { getEmailFromCookie } from '../middleware/auth'
+import { parseLimit } from '../lib/paging'
 import { retrieveContext, buildContextBlock } from '../lib/rag'
 import { getChatCompletion, type ChatMessage } from '../lib/llm'
 import { openTicket } from '../lib/tickets'
@@ -47,7 +49,7 @@ export async function listConversations(c: AppContext) {
     const user = await queries.getUserByEmail(db, email)
     if (!user) return jsonError(c, 'User not found', 404)
 
-    const list = await queries.getConversationsByUser(db, user.id)
+    const list = await queries.getConversationsByUser(db, user.id, parseLimit(c, 50, 200))
     return jsonOk(c, list, 'Conversations retrieved')
 }
 
@@ -62,7 +64,7 @@ export async function getConversation(c: AppContext) {
         return jsonError(c, 'Conversation not found', 404)
     }
 
-    const messages = await queries.getMessagesByConversation(db, id)
+    const messages = await queries.getMessagesByConversation(db, id, parseLimit(c, 200, 1000))
     return jsonOk(c, { conversation, messages }, 'Conversation retrieved')
 }
 
@@ -136,7 +138,7 @@ export async function sendMessage(c: AppContext) {
     const nextStatus = newMessageCount >= MAX_MESSAGES_PER_CONVERSATION ? 'full' : 'active'
 
     await queries.updateConversation(db, id, {
-        messageCount: newMessageCount,
+        messageCount: sql`message_count + 2`,
         status: nextStatus,
         ...(conversation.messageCount === 0 ? { title: userMessage.slice(0, 60) } : {}),
     })
@@ -196,7 +198,7 @@ export async function escalateConversation(c: AppContext) {
     }
 
     const payload = await c.req.json<{ message?: string }>().catch(() => null)
-    const messages = await queries.getMessagesByConversation(db, id)
+    const messages = await queries.getMessagesByConversation(db, id, 1000)
     const lastUserMessage = [...messages].reverse().find((m) => m.role === 'user')?.content ?? 'No message provided'
     const ticketMessage = payload?.message?.trim() || lastUserMessage
 

@@ -36,11 +36,8 @@ export async function syncKbSource(db: Db, env: Bindings, source: KbSourceRow): 
         const markdown = googleDocHtmlToMarkdown(html)
         const chunks = chunkMarkdown(markdown)
 
-        const oldChunks = await queries.getKbChunksBySource(db, source.id)
-        if (oldChunks.length > 0) {
-            await deleteChunkVectors(env, oldChunks.map((c) => c.vectorId))
-            await queries.deleteKbChunksBySource(db, source.id)
-        }
+        const oldChunks = await queries.getKbChunksBySource(db, source.id, 10000)
+        const oldVectorIds = new Set(oldChunks.map((c) => c.vectorId))
 
         const vectors: { id: string; values: number[]; sourceId: number; title: string; text: string }[] = []
 
@@ -62,6 +59,8 @@ export async function syncKbSource(db: Db, env: Bindings, source: KbSourceRow): 
 
         await upsertChunkVectors(env, vectors)
 
+        await queries.deleteKbChunksBySource(db, source.id)
+
         await queries.createKbChunks(
             db,
             vectors.map((v, idx) => ({
@@ -71,6 +70,12 @@ export async function syncKbSource(db: Db, env: Bindings, source: KbSourceRow): 
                 content: v.text,
             }))
         )
+
+        const newVectorIds = new Set(vectors.map((v) => v.id))
+        const staleVectorIds = [...oldVectorIds].filter((id) => !newVectorIds.has(id))
+        if (staleVectorIds.length > 0) {
+            await deleteChunkVectors(env, staleVectorIds)
+        }
 
         await queries.updateKbSource(db, source.id, {
             title,
@@ -92,7 +97,7 @@ export async function syncKbSource(db: Db, env: Bindings, source: KbSourceRow): 
 }
 
 export async function syncAllKbSources(db: Db, env: Bindings): Promise<SyncResult[]> {
-    const sources = await queries.getAllKbSources(db)
+    const sources = await queries.getAllKbSources(db, 1000)
     const results: SyncResult[] = []
 
     for (const source of sources) {

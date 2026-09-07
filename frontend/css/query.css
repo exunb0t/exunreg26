@@ -1,0 +1,224 @@
+::-webkit-scrollbar {
+  display: none;
+}
+
+.query-detail-page {
+  padding: 0px 0;
+
+  min-height: 100vh;
+}
+
+.query-detail-header {
+  background: var(--exun-blue);
+  color: var(--white);
+  padding: 48px 0 32px 0;
+  margin-bottom: 28px;
+}
+
+.query-detail-title {
+  font-size: 4vw;
+  font-weight: 700;
+  margin-bottom: 12px;
+  text-align: center;
+}
+
+.query-detail-subtitle {
+  font-size: 3vw;
+  opacity: 0.9;
+  text-align: center;
+}
+
+@font-face {
+  font-family: "OutfitCustom";
+  src: url("/fonts/outfit.ttf") format("truetype");
+  font-weight: 300 800;
+  font-style: normal;
+  font-display: swap;
+}
+
+.query-search {
+  display: flex;
+  justify-content: center;
+  margin: 18px 0;
+}
+
+.query-search-box {
+  position: relative;
+  width: 45%;
+  max-width: 800px;
+  min-width: 220px;
+}
+
+.query-search-icon {
+  position: absolute;
+  left: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 25px;
+  height: 25px;
+  pointer-events: none;
+}
+
+.query-search-input {
+  width: 100%;
+  padding: 14px 48px 14px 48px;
+  border-radius: 8px;
+  border: none;
+  outline: none;
+  font-family:
+    "OutfitCustom",
+    system-ui,
+    -apple-system,
+    "Segoe UI",
+    Roboto,
+    "Helvetica Neue",
+    Arial;
+  font-size: 1.05rem;
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.12);
+}
+
+.query-search-button {
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: white;
+  border: none;
+  padding: 8px;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.query-search-button svg {
+  display: block;
+}
+
+.query-search-input::-webkit-search-decoration,
+.query-search-input::-webkit-search-cancel-button,
+.query-search-input::-webkit-search-results-button,
+.query-search-input::-webkit-search-results-decoration {
+  display: none;
+}
+.query-search-input::-ms-clear,
+.query-search-input::-ms-reveal {
+  display: none;
+}
+.query-search-input {
+  -webkit-appearance: textfield;
+  appearance: textfield;
+}
+
+.query-search-input::placeholder {
+  color: rgba(0, 0, 0, 0.45);
+}
+
+@media (max-width: 480px) {
+  .query-detail-title {
+    font-size: 36px;
+  }
+  .query-detail-subtitle {
+    font-size: 24px;
+  }
+}
+
+.faq-section {
+  padding: 36px 0 64px 0;
+  background: #ffffff;
+}
+.faq-title {
+  text-align: center;
+  color: #2977f5;
+  font-size: clamp(28px, 4vw, 40px);
+  font-weight: 800;
+  margin: 0 0 32px 0;
+  padding: 0 20px;
+}
+.faq-wrapper {
+  max-width: 860px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 0 20px;
+}
+.faq-item {
+  background: #f4f5f7;
+  border: 1px solid rgba(15, 23, 42, 0.06);
+  border-radius: 16px;
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.05);
+  overflow: hidden;
+  transition: border-color 0.25s ease, box-shadow 0.25s ease;
+}
+.faq-item:hover {
+  border-color: #2977f5;
+}
+.faq-item--open {
+  border-color: rgba(41, 119, 245, 0.35);
+  box-shadow: 0 12px 28px rgba(41, 119, 245, 0.12);
+}
+.faq-toggle {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 20px 26px;
+  font-family: inherit;
+  text-align: left;
+}
+.faq-question {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+  color: #33373b;
+}
+.faq-icon {
+  flex-shrink: 0;
+  display: inline-flex;
+  color: #2977f5;
+  transition: transform 0.3s ease;
+}
+.faq-item--open .faq-icon {
+  transform: rotate(180deg);
+}
+.faq-answer-wrap {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 0.35s ease;
+}
+.faq-item--open .faq-answer-wrap {
+  grid-template-rows: 1fr;
+}
+.faq-answer {
+  margin: 0;
+  min-height: 0;
+  overflow: hidden;
+  color: #4b5563;
+  font-size: 16px;
+  line-height: 1.7;
+  padding: 0 26px;
+}
+.faq-item--open .faq-answer {
+  padding-bottom: 22px;
+}
+
+@media (max-width: 768px) {
+  .faq-wrapper {
+    padding: 0 16px;
+  }
+  .faq-toggle {
+    padding: 16px 20px;
+  }
+  .faq-question {
+    font-size: 16px;
+  }
+  .faq-answer {
+    padding: 0 20px;
+  }
+  .faq-item--open .faq-answer {
+    padding-bottom: 18px;
+  }
+}

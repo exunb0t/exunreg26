@@ -39,9 +39,12 @@ export interface Bindings {
 
     AI: Ai
 
+    ALLOWED_ORIGINS?: string
+
     // rate limiter
     API_RATE_LIMITER?: RateLimitBinding
     AUTH_RATE_LIMITER?: RateLimitBinding
+    CHAT_RATE_LIMITER?: RateLimitBinding
 }
 
 export type AppContext = Context<any>

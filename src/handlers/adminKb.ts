@@ -5,10 +5,11 @@ import * as queries from '../db/queries'
 import { extractGoogleDocId } from '../lib/googleDocs'
 import { syncKbSource, syncAllKbSources, parseSeedUrls } from '../lib/kb'
 import { deleteChunkVectors } from '../lib/qdrant'
+import { parseLimit } from '../lib/paging'
 
 export async function listSources(c: AppContext) {
     const db = getDb(c.env)
-    const sources = await queries.getAllKbSources(db)
+    const sources = await queries.getAllKbSources(db, 100)
     return jsonOk(c, sources, 'Knowledge base sources retrieved')
 }
 
@@ -20,6 +21,10 @@ export async function addSources(c: AppContext) {
 
     if (urls.length === 0) {
         return jsonError(c, 'At least one url required', 400)
+    }
+
+    if (urls.length > 20) {
+        return jsonError(c, 'At most 20 urls per request', 400)
     }
 
     const created = []
@@ -51,11 +56,12 @@ export async function addSources(c: AppContext) {
 export async function deleteSource(c: AppContext) {
     const db = getDb(c.env)
     const id = Number(c.req.param('id'))
+    if (!Number.isInteger(id)) return jsonError(c, 'Valid source ID required', 400)
 
     const source = await queries.getKbSourceById(db, id)
     if (!source) return jsonError(c, 'Source not found', 404)
 
-    const chunks = await queries.getKbChunksBySource(db, id)
+    const chunks = await queries.getKbChunksBySource(db, id, 10000)
     if (chunks.length > 0) {
         await deleteChunkVectors(c.env, chunks.map((ch) => ch.vectorId))
     }
@@ -85,11 +91,12 @@ export async function syncSources(c: AppContext) {
 export async function getSourceChunks(c: AppContext) {
     const db = getDb(c.env)
     const id = Number(c.req.param('id'))
+    if (!Number.isInteger(id)) return jsonError(c, 'Valid source ID required', 400)
 
     const source = await queries.getKbSourceById(db, id)
     if (!source) return jsonError(c, 'Source not found', 404)
 
-    const chunks = await queries.getKbChunksBySource(db, id)
+    const chunks = await queries.getKbChunksBySource(db, id, parseLimit(c, 200, 1000))
 
     return jsonOk(c, { source, chunks }, 'Chunks retrieved')
 }

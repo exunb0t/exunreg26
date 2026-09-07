@@ -1,0 +1,114 @@
+.event-card {
+    background: #f4f5f7;
+    border: 1px solid rgba(15, 23, 42, 0.06);
+    border-radius: 20px;
+    box-shadow: 0 2px 8px rgba(15, 23, 42, 0.05);
+    padding: 36px 28px;
+    width: 300px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 18px;
+    transition: all 0.3s ease;
+    cursor: pointer;
+    text-decoration: none;
+    color: inherit;
+}
+
+.event-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 32px rgba(41, 119, 245, 0.15);
+    border-color: var(--exun-blue);
+}
+
+.event-card--flash {
+    animation: eventCardFlash 2.2s ease;
+}
+
+@keyframes eventCardFlash {
+    0%, 100% {
+        box-shadow: 0 2px 8px rgba(15, 23, 42, 0.05);
+    }
+    20%, 60% {
+        box-shadow: 0 0 0 3px #2977f5, 0 12px 32px rgba(41, 119, 245, 0.25);
+    }
+}
+
+.event-card__image {
+    width: 110px;
+    height: 110px;
+    object-fit: contain;
+}
+
+.event-card__title {
+    font-size: 20px;
+    font-weight: 700;
+    text-align: center;
+    color: #33373b;
+    margin: 0;
+}
+
+.event-card__pills {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    flex-wrap: wrap;
+    width: 100%;
+}
+
+.event-card__mode {
+    background-color: #2977f5;
+    color: #fff;
+    padding: 7px 20px;
+    border-radius: 999px;
+    font-size: 15px;
+    font-weight: 500;
+}
+
+.event-card__participants {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--slate-grey);
+    font-size: 15px;
+    text-transform: capitalize;
+}
+
+.event-card__participants svg {
+    flex-shrink: 0;
+}
+
+.event-card__eligibility {
+    background-color: rgba(41, 119, 245, 0.12);
+    color: var(--exun-blue);
+    padding: 7px 20px;
+    border-radius: 999px;
+    font-size: 15px;
+    font-weight: 500;
+}
+
+@media (max-width: 768px) {
+    .event-card {
+        width: 280px;
+        padding: 28px 22px;
+    }
+
+    .event-card__image {
+        width: 88px;
+        height: 88px;
+    }
+
+    .event-card__title {
+        font-size: 18px;
+    }
+}
+
+@media (max-width: 480px) {
+    .event-card {
+        width: 100%;
+        max-width: 300px;
+        padding: 24px 18px;
+    }
+}

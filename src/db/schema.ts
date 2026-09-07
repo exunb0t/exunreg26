@@ -59,6 +59,8 @@ export const individualRegistrations = sqliteTable('individual_registrations', {
     .notNull()
     .references(() => users.id),
 
+  eventId: text('event_id'),
+
   fullname: text('fullname'),
   userEmail: text('user_email'),
 
@@ -76,7 +78,9 @@ export const individualRegistrations = sqliteTable('individual_registrations', {
   updatedAt: text('updated_at')
     .notNull()
     .default(sql`CURRENT_TIMESTAMP`),
-})
+}, (t) => ({
+  userEventIdx: index('idx_individual_regs_user_event').on(t.userId, t.eventId),
+}))
 
 export const logs = sqliteTable('logs', {
   id: integer('id').primaryKey({ autoIncrement: true }),

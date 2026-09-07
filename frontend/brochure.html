@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Brochure | Exun 2026</title>
+    <link rel="icon" href="/assets/favicon.ico" type="image/x-icon" />
+
+    <link rel="stylesheet" href="/css/main.css" />
+    <link rel="stylesheet" href="/css/navbar.css" />
+    <link rel="stylesheet" href="/css/footer.css" />
+    <link rel="stylesheet" href="/css/brochure.css" />
+    <link rel="stylesheet" href="/css/toast.css" />
+    <link rel="stylesheet" href="/css/query.css" />
+    <link rel="stylesheet" href="/css/chat.css" />
+  </head>
+  <body data-page="brochure">
+    <div id="navbar-container"></div>
+
+    <main class="brochure-page">
+      <div class="container">
+        <div class="brochure-header">
+          <h1 class="brochure-title">Exun 2026 Brochure</h1>
+          <p class="brochure-subtitle">
+            Comprehensive information about our events and symposium
+          </p>
+        </div>
+        <div class="brochure-content">
+          <div class="brochure-grid">
+            <aside class="brochure-nav">
+              <h4>Contents</h4>
+              <ul id="nav-list" class="brochure-nav__list"></ul>
+            </aside>
+            <section class="brochure-main">
+              <div id="html-content" class="brochure-markdown">
+                <div class="loading-placeholder">Loading brochure...</div>
+              </div>
+            </section>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <div id="footer-container"></div>
+
+    <script src="/js/api.js"></script>
+    <script src="/js/utils.js"></script>
+    <script src="/js/navigation.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script src="/js/brochure.js"></script>
+    <script>
+      document.addEventListener("DOMContentLoaded", async function () {
+        try {
+          await Utils.loadComponent("/components/navbar.html", document.getElementById("navbar-container"));
+          await Utils.loadComponent("/components/footer.html", document.getElementById("footer-container"));
+        } catch (e) {}
+      });
+    </script>
+  </body>
+</html>
