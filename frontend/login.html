@@ -6,7 +6,9 @@
     <title>Login | Exun 2026</title>
     <link rel="icon" href="/assets/favicon.ico" type="image/x-icon" />
     <link rel="stylesheet" href="/css/main.css" />
+    <link rel="stylesheet" href="/css/context-menu.css" />
     <link rel="stylesheet" href="/css/login.css" />
+    <link rel="stylesheet" href="/css/chat-widget.css" />
     <link rel="stylesheet" href="/css/toast.css" />
   </head>
   <body data-page="login">
@@ -38,7 +40,6 @@
               Send OTP
             </button>
           </form>
-          <div id="auth-status" class="login-status" aria-live="polite"></div>
         </div>
 
         <div id="otp-container" style="display: none">
@@ -70,13 +71,14 @@
             <span class="otp-separator"> · </span>
             <a href="#" class="otp-resend-link" id="change-email">Use a different email</a>
           </div>
-          <div id="otp-status" class="login-status" aria-live="polite"></div>
         </div>
       </div>
     </main>
 
     <script src="/js/api.js"></script>
     <script src="/js/utils.js"></script>
+    <script src="/js/chat-widget.js"></script>
+    <script src="/js/context-menu.js"></script>
     <script src="/js/login.js"></script>
   </body>
 </html>

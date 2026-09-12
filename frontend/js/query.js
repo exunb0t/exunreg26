@@ -56,6 +56,67 @@ document.addEventListener('DOMContentLoaded', function () {
   const input = document.getElementById('query-input');
   const results = document.getElementById('results');
 
+  function ticketStatusClass(status) {
+    const s = String(status || '').toLowerCase();
+    if (s === 'resolved' || s === 'closed') return 'ticket-status--resolved';
+    if (s === 'replied' || s === 'answered') return 'ticket-status--replied';
+    return 'ticket-status--open';
+  }
+
+  function renderTicket(t) {
+    const card = document.createElement('div');
+    card.className = 'ticket-card';
+    const head = document.createElement('div');
+    head.className = 'ticket-card__header';
+    const title = document.createElement('h4');
+    title.className = 'ticket-card__title';
+    title.textContent = t.subject || 'Untitled';
+    const status = document.createElement('span');
+    status.className = 'ticket-status ' + ticketStatusClass(t.status);
+    status.textContent = String(t.status || 'open').toUpperCase();
+    head.appendChild(title);
+    head.appendChild(status);
+    card.appendChild(head);
+    const msg = document.createElement('p');
+    msg.className = 'ticket-card__message';
+    msg.textContent = t.message || '';
+    card.appendChild(msg);
+    if (t.adminReply) {
+      const reply = document.createElement('div');
+      reply.className = 'ticket-card__reply';
+      const label = document.createElement('div');
+      label.className = 'ticket-card__reply-label';
+      label.textContent = 'Admin reply' + (t.repliedBy ? ' · ' + t.repliedBy : '');
+      const body = document.createElement('p');
+      body.textContent = t.adminReply;
+      reply.appendChild(label);
+      reply.appendChild(body);
+      card.appendChild(reply);
+    }
+    return card;
+  }
+
+  async function loadMyTickets() {
+    const section = document.getElementById('tickets-section');
+    const box = document.getElementById('tickets-container');
+    if (!section || !box) return;
+    let session = { authenticated: false };
+    try {
+      session = await window.ExunServices.api.getSession();
+    } catch (e) {}
+    if (!session.authenticated) return;
+    try {
+      const resp = await window.ExunServices.query.mine();
+      const list = (resp && resp.data) || [];
+      if (list.length === 0) return;
+      box.innerHTML = '';
+      list.forEach((t) => box.appendChild(renderTicket(t)));
+      section.style.display = '';
+    } catch (e) {}
+  }
+
+  loadMyTickets();
+
   function addResult(subject, message, status) {
     if (!results) return;
     const placeholder = results.querySelector('.text-muted');
@@ -90,6 +151,7 @@ document.addEventListener('DOMContentLoaded', function () {
         addResult(subject, message, 'sent');
         Utils.showToast('Query submitted successfully', 'success');
         input.value = '';
+        loadMyTickets();
       } catch (err) {
         Utils.showToast((err && err.message) || 'Failed to submit query', 'error');
       }

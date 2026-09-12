@@ -8,11 +8,84 @@ import { parseLimit } from '../lib/paging'
 import { retrieveContext, buildContextBlock } from '../lib/rag'
 import { getChatCompletion, type ChatMessage } from '../lib/llm'
 import { openTicket } from '../lib/tickets'
+import { slugify } from '../lib/slug'
+import type { EventRow } from '../db/queries'
 
 const MAX_MESSAGES_PER_CONVERSATION = 40
 const CONTEXT_MESSAGE_WINDOW = 12
 const MAX_MESSAGE_LENGTH = 4000
 const ESCALATE_MARKER = '[[ESCALATE]]'
+
+interface Suggestion {
+    label: string
+    message?: string
+    navigate?: string
+}
+
+function findEvent(events: EventRow[], text: string): EventRow | undefined {
+    const t = text.toLowerCase()
+    const sorted = [...events].sort((a, b) => b.name.length - a.name.length)
+    for (const ev of sorted) {
+        if (t.includes(ev.name.toLowerCase())) return ev
+    }
+    for (const ev of sorted) {
+        const slug = slugify(ev.name)
+        if (slug && t.replace(/[^a-z0-9]+/g, '').includes(slug.replace(/-/g, ''))) return ev
+    }
+    return undefined
+}
+
+function destinationFor(text: string): { label: string; navigate: string } | undefined {
+    const t = text.toLowerCase()
+    if (t.includes('event') && (t.includes('list') || t.includes('all') || t.includes('browse') || t.includes('page'))) return { label: 'Open events page', navigate: '/events' }
+    if (t.includes('summary') || t.includes('registration') && (t.includes('status') || t.includes('my') || t.includes('view'))) return { label: 'Open registration summary', navigate: '/summary' }
+    if (t.includes('profile') || t.includes('account') || t.includes('complete')) return { label: 'Open profile page', navigate: '/complete' }
+    if (t.includes('brochure') || t.includes('invite')) return { label: 'Open brochure', navigate: '/brochure' }
+    if (t.includes('ticket') || t.includes('support') || t.includes('query') || t.includes('queries') || t.includes('contact') || t.includes('human') || t.includes('help')) return { label: 'Open support page', navigate: '/query' }
+    if (t.includes('home') || t.includes('main') || t.includes('landing')) return { label: 'Open home page', navigate: '/' }
+    if (t.includes('login') || t.includes('sign in') || t.includes('log in')) return { label: 'Open login page', navigate: '/login' }
+    return undefined
+}
+
+function buildSuggestions(events: EventRow[], userMessage: string, reply: string): Suggestion[] {
+    const out: Suggestion[] = []
+    const navIntent = /(take me to|open|go to|show me|navigate to|visit|bring me to)\b/i.test(userMessage)
+    const ev = findEvent(events, userMessage) || findEvent(events, reply)
+    if (ev) {
+        const url = `/event/${slugify(ev.name)}?id=${encodeURIComponent(ev.id)}`
+        if (navIntent) {
+            out.push({ label: `Open ${ev.name}`, navigate: url })
+        } else {
+            out.push({ label: `Take me to ${ev.name}`, navigate: url })
+        }
+        out.push({ label: `How many participants in ${ev.name}?`, message: `How many participants are allowed in ${ev.name}?` })
+        out.push(ev.independentRegistration
+            ? { label: 'Which events allow individual registration?', message: 'Which events allow individual registration?' }
+            : { label: 'Which events are team-only?', message: 'Which events are team-only?' })
+        return out.slice(0, 3)
+    }
+    if (navIntent) {
+        const dest = destinationFor(userMessage) || destinationFor(reply)
+        if (dest) out.push(dest)
+    }
+    if (out.length === 0) {
+        out.push(
+            { label: 'What events can I register for?', message: 'What events can I register for?' },
+            { label: 'How do I complete my profile?', message: 'How do I complete my profile?' },
+            { label: 'Take me to the events page', navigate: '/events' }
+        )
+    } else {
+        const fallback: Suggestion[] = [
+            { label: 'What events can I register for?', message: 'What events can I register for?' },
+            { label: 'Take me to the events page', navigate: '/events' },
+        ]
+        for (const f of fallback) {
+            if (out.length >= 3) break
+            if (!out.some((s) => s.navigate === f.navigate && s.message === f.message)) out.push(f)
+        }
+    }
+    return out.slice(0, 3)
+}
 
 function buildSystemPrompt(contextBlock: string): string {
     return `You are the support assistant for the Exun 2026 registration platform. Answer questions using ONLY the context below, which comes from the official event documentation. Be concise and friendly.
@@ -109,7 +182,7 @@ export async function sendMessage(c: AppContext) {
         return jsonError(c, 'Message is too long', 400)
     }
 
-    await queries.createChatMessage(db, { conversationId: id, role: 'user', content: userMessage })
+    const userMsg = await queries.createChatMessage(db, { conversationId: id, role: 'user', content: userMessage })
 
     const { matches, lowConfidence } = await retrieveContext(c.env, userMessage)
     const contextBlock = buildContextBlock(matches)
@@ -143,38 +216,19 @@ export async function sendMessage(c: AppContext) {
         ...(conversation.messageCount === 0 ? { title: userMessage.slice(0, 60) } : {}),
     })
 
-    let ticketId: number | undefined
-
+    let suggestEscalation = false
     if (shouldEscalate) {
         const existingTicket = await queries.getOpenTicketByConversation(db, id)
-
-        if (!existingTicket) {
-            const ticket = await openTicket(db, c.env, {
-                conversationId: id,
-                userEmail: email,
-                subject: `Chatbot escalation: ${userMessage.slice(0, 80)}`,
-                message: `User question:\n${userMessage}\n\nAssistant reply:\n${cleanReply}`,
-                createdBy: 'ai',
-            })
-
-            ticketId = ticket.id
-
-            await queries.createChatMessage(db, {
-                conversationId: id,
-                role: 'system',
-                content: 'This question has been forwarded to a human admin. You will be notified here and by email once they respond.',
-            })
-        } else {
-            ticketId = existingTicket.id
-        }
+        suggestEscalation = !existingTicket
     }
 
     return jsonOk(
         c,
         {
             reply: cleanReply,
-            escalated: shouldEscalate,
-            ticketId,
+            messageId: userMsg.id,
+            suggestEscalation,
+            escalationSubject: `Chatbot escalation: ${userMessage.slice(0, 80)}`,
             conversationStatus: nextStatus,
         },
         'Message sent'
@@ -217,4 +271,50 @@ export async function escalateConversation(c: AppContext) {
     })
 
     return jsonOk(c, { ticketId: ticket.id }, 'Ticket created')
+}
+
+export async function updateMessage(c: AppContext) {
+    const email = getEmailFromCookie(c)
+    const db = getDb(c.env)
+    const id = c.req.param('cid')
+    const mid = Number(c.req.param('mid'))
+    if (!id) return jsonError(c, 'Conversation id required', 400)
+    if (!Number.isInteger(mid)) return jsonError(c, 'Valid message id required', 400)
+
+    const conversation = await queries.getConversationById(db, id)
+    if (!conversation || conversation.email !== email) {
+        return jsonError(c, 'Conversation not found', 404)
+    }
+
+    const msg = await queries.getChatMessageById(db, mid)
+    if (!msg || msg.conversationId !== id) {
+        return jsonError(c, 'Message not found', 404)
+    }
+
+    if (msg.role !== 'user') {
+        return jsonError(c, 'Only your messages can be edited', 400)
+    }
+
+    const payload = await c.req.json<{ content?: string }>().catch(() => null)
+    const content = payload?.content?.trim()
+
+    if (!content) {
+        return jsonError(c, 'Content required', 400)
+    }
+
+    if (content.length > MAX_MESSAGE_LENGTH) {
+        return jsonError(c, 'Message is too long', 400)
+    }
+
+    let edits: Array<{ content: string; at: string }> = []
+    try {
+        const parsed = JSON.parse((msg as { edits?: string }).edits || '[]')
+        if (Array.isArray(parsed)) edits = parsed
+    } catch {
+        edits = []
+    }
+    edits.push({ content: msg.content, at: new Date().toISOString() })
+
+    const updated = await queries.updateChatMessageContent(db, mid, content, JSON.stringify(edits))
+    return jsonOk(c, updated, 'Message updated')
 }

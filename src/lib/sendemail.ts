@@ -5,30 +5,34 @@ export async function sendEmail(
     to: string,
     subject: string,
     body: string,
-    env: Env
+    env: Env,
+    html?: string
 ) {
-    const email = env.GMAIL_EMAIL
-    const password = env.GMAIL_APP_PASSWORD
+    const host = env.SMTP_HOST
+    const port = Number(env.SMTP_PORT || 587)
+    const username = env.SMTP_USERNAME
+    const password = env.SMTP_PASSWORD
 
-    if (!email || !password) {
-        throw new Error('GMAIL_EMAIL or GMAIL_APP_PASSWORD is missing')
+    if (!host || !username || !password) {
+        throw new Error('SMTP_HOST, SMTP_USERNAME or SMTP_PASSWORD is missing')
     }
 
     const mailer = await WorkerMailer.connect({
-        host: 'smtp.gmail.com',
-        port: 465,
-        secure: true,
+        host,
+        port,
+        secure: port === 465,
         credentials: {
-            username: email,
+            username,
             password,
         },
         authType: 'plain',
     })
 
     await mailer.send({
-        from: email,
+        from: env.FROM_EMAIL || username,
         to,
         subject,
         text: body,
+        ...(html ? { html } : {}),
     })
 }

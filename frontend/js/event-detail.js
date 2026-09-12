@@ -154,14 +154,10 @@ class EventDetailPage {
 
   checkProfileCompleteness(user) {
     const u = { ...user };
-    const isIndividual = !!(u.individual || u.Individual);
     const missing = [];
     const phone = u.phoneNumber || u.phone_number || "";
     if (!phone || String(phone).trim() === "") missing.push("phone number");
-    if (isIndividual) {
-      const fullname = u.fullname || u.fullName || "";
-      if (!fullname || String(fullname).trim() === "") missing.push("full name");
-    } else {
+    if (!u.individual && !u.Individual) {
       const inst = u.institutionName || u.institution_name || "";
       const princ = u.principalsEmail || u.principals_email || "";
       if (!inst || String(inst).trim() === "") missing.push("institution name");

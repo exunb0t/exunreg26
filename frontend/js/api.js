@@ -149,6 +149,9 @@ window.ExunServices.summary = {
 window.ExunServices.query = {
     submit: function (subject, message) {
         return apiRequest('/api/query', { method: 'POST', body: { subject, message } });
+    },
+    mine: function () {
+        return apiRequest('/api/tickets/mine', { method: 'GET' });
     }
 };
 
@@ -162,8 +165,14 @@ window.ExunServices.chat = {
     getConversation: function (id) {
         return apiRequest(`/api/chat/conversations/${encodeURIComponent(id)}`, { method: 'GET' });
     },
+    deleteConversation: function (id) {
+        return apiRequest(`/api/chat/conversations/${encodeURIComponent(id)}`, { method: 'DELETE' });
+    },
     sendMessage: function (id, message) {
         return apiRequest(`/api/chat/conversations/${encodeURIComponent(id)}/messages`, { method: 'POST', body: { message } });
+    },
+    updateMessage: function (cid, mid, content) {
+        return apiRequest(`/api/chat/conversations/${encodeURIComponent(cid)}/messages/${encodeURIComponent(mid)}`, { method: 'PATCH', body: { content } });
     },
     escalate: function (id, message) {
         return apiRequest(`/api/chat/conversations/${encodeURIComponent(id)}/escalate`, { method: 'POST', body: message ? { message } : {} });
@@ -200,5 +209,41 @@ window.ExunServices.admin = {
     },
     importEvents: function (events) {
         return apiRequest('/api/admin/import_events', { method: 'POST', body: { events } });
+    },
+    listTickets: function (status) {
+        return apiRequest('/api/admin/tickets' + (status ? `?status=${encodeURIComponent(status)}` : ''), { method: 'GET' });
+    },
+    getTicket: function (id) {
+        return apiRequest(`/api/admin/tickets/${encodeURIComponent(id)}`, { method: 'GET' });
+    },
+    replyTicket: function (id, message) {
+        return apiRequest(`/api/admin/tickets/${encodeURIComponent(id)}/reply`, { method: 'POST', body: { message } });
+    },
+    setTicketStatus: function (id, status) {
+        return apiRequest(`/api/admin/tickets/${encodeURIComponent(id)}`, { method: 'PATCH', body: { status } });
+    },
+    kbSources: function () {
+        return apiRequest('/api/admin/kb/sources', { method: 'GET' });
+    },
+    kbAddSource: function (url) {
+        return apiRequest('/api/admin/kb/sources', { method: 'POST', body: { url } });
+    },
+    kbDeleteSource: function (id) {
+        return apiRequest(`/api/admin/kb/sources/${encodeURIComponent(id)}`, { method: 'DELETE' });
+    },
+    kbChunks: function (id) {
+        return apiRequest(`/api/admin/kb/sources/${encodeURIComponent(id)}/chunks`, { method: 'GET' });
+    },
+    kbSync: function (sourceId) {
+        return apiRequest('/api/admin/kb/sync', { method: 'POST', body: sourceId ? { sourceId } : {} });
+    },
+    kbSeed: function () {
+        return apiRequest('/api/admin/kb/sources/seed', { method: 'POST', body: {} });
+    },
+    sendInvite: function (email, message) {
+        return apiRequest('/api/admin/send-invite', { method: 'POST', body: { email, message } });
+    },
+    syncSheets: function (spreadsheetId, range) {
+        return apiRequest('/api/admin/sync-sheets', { method: 'POST', body: range ? { spreadsheetId, range } : { spreadsheetId } });
     }
 };

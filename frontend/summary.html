@@ -7,6 +7,7 @@
     <link rel="icon" href="/assets/favicon.ico" type="image/x-icon" />
 
     <link rel="stylesheet" href="/css/main.css" />
+    <link rel="stylesheet" href="/css/context-menu.css" />
     <link rel="stylesheet" href="/css/navbar.css" />
     <link rel="stylesheet" href="/css/footer.css" />
     <link rel="stylesheet" href="/css/summary.css" />
@@ -68,14 +69,13 @@
           </div>
 
           <div class="summary-actions">
-            <button class="btn btn--primary" id="refresh-btn">
-              Refresh Data
-            </button>
-            <button class="btn btn--secondary" id="edit-profile-btn">
+            <div class="summary-actions__left">
+              <button class="btn btn--secondary" id="logout-btn">
+                Logout
+              </button>
+            </div>
+            <button class="btn btn--primary" id="edit-profile-btn">
               Edit Profile
-            </button>
-            <button class="btn btn--secondary" id="logout-btn">
-              Logout
             </button>
           </div>
         </div>
@@ -86,6 +86,7 @@
 
     <script src="/js/api.js"></script>
     <script src="/js/utils.js"></script>
+    <script src="/js/context-menu.js"></script>
     <script src="/js/navigation.js"></script>
     <script src="/js/chat-widget.js"></script>
     <script src="/js/summary.js"></script>

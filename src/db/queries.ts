@@ -419,6 +419,20 @@ export async function createChatMessage(db: Db, data: ChatMessageInsert): Promis
     return rows[0]
 }
 
+export async function getChatMessageById(db: Db, id: number): Promise<ChatMessageRow | undefined> {
+    const rows = await db.select().from(chatMessages).where(eq(chatMessages.id, id)).limit(1)
+    return rows[0]
+}
+
+export async function updateChatMessageContent(db: Db, id: number, content: string, editsJson: string): Promise<ChatMessageRow | undefined> {
+    const rows = await db
+        .update(chatMessages)
+        .set({ content, edits: editsJson })
+        .where(eq(chatMessages.id, id))
+        .returning()
+    return rows[0]
+}
+
 export async function getMessagesByConversation(db: Db, conversationId: string, limit: number): Promise<ChatMessageRow[]> {
     return db
         .select()
@@ -533,6 +547,15 @@ export async function getOpenTicketByConversation(db: Db, conversationId: string
         .where(and(eq(tickets.conversationId, conversationId), eq(tickets.status, 'open')))
         .limit(1)
     return rows[0]
+}
+
+export async function getTicketsByUserEmail(db: Db, email: string, limit: number): Promise<TicketRow[]> {
+    return db
+        .select()
+        .from(tickets)
+        .where(eq(tickets.userEmail, email))
+        .orderBy(desc(tickets.createdAt))
+        .limit(limit)
 }
 
 export async function getRegistrationByEventUser(

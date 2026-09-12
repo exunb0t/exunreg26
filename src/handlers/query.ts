@@ -3,6 +3,8 @@ import { jsonOk, jsonError } from '../lib/response'
 import { getDb } from '../db/client'
 import * as queries from '../db/queries'
 import { getEmailFromCookie } from '../middleware/auth'
+import { openTicket } from '../lib/tickets'
+import { parseLimit } from '../lib/paging'
 
 
 export async function queryHandler(c: AppContext) {
@@ -37,13 +39,15 @@ export async function queryHandler(c: AppContext) {
     }
 
 
-    const ticket = await queries.createQuery(
+    const ticket = await openTicket(
         db,
+        c.env,
         {
-            email,
+            conversationId: null,
+            userEmail: email,
             subject: payload.subject,
             message: payload.message,
-            status: 'open',
+            createdBy: 'user',
         }
     )
 
@@ -55,5 +59,35 @@ export async function queryHandler(c: AppContext) {
             status: ticket.status,
         },
         'Query submitted successfully'
+    )
+}
+
+
+export async function listMyTickets(c: AppContext) {
+
+    const db = getDb(c.env)
+
+    const email = getEmailFromCookie(c)
+
+    if (!email) {
+        return jsonError(
+            c,
+            'Authentication required',
+            401
+        )
+    }
+
+
+    const list = await queries.getTicketsByUserEmail(
+        db,
+        email,
+        parseLimit(c, 50, 200)
+    )
+
+
+    return jsonOk(
+        c,
+        list,
+        'Tickets retrieved'
     )
 }

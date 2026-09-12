@@ -261,3 +261,93 @@
 .query-results-section:has(#results > .text-muted:only-child) {
   display: none;
 }
+
+.tickets-section {
+  padding: 8px 0 64px 0;
+}
+
+.tickets-section .faq-title {
+  margin-bottom: 24px;
+}
+
+#tickets-container {
+  max-width: 860px;
+  margin: 0 auto;
+  padding: 0 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.ticket-card {
+  background: #f4f5f7;
+  border: 1px solid rgba(15, 23, 42, 0.06);
+  border-radius: 16px;
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.05);
+  padding: 22px 26px;
+}
+
+.ticket-card__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.ticket-card__title {
+  margin: 0;
+  font-size: 17px;
+  font-weight: 600;
+  color: #33373b;
+}
+
+.ticket-status {
+  flex-shrink: 0;
+  padding: 6px 18px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.ticket-status--open {
+  background: rgba(41, 119, 245, 0.12);
+  color: var(--exun-blue);
+}
+
+.ticket-status--replied {
+  background: #2977f5;
+  color: #fff;
+}
+
+.ticket-status--resolved {
+  background: rgba(22, 101, 52, 0.12);
+  color: #166534;
+}
+
+.ticket-card__message {
+  margin: 0;
+  color: #4b5563;
+  font-size: 15px;
+  line-height: 1.7;
+}
+
+.ticket-card__reply {
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px solid rgba(15, 23, 42, 0.1);
+}
+
+.ticket-card__reply-label {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--exun-blue);
+  margin-bottom: 6px;
+}
+
+.ticket-card__reply p {
+  margin: 0;
+  color: #33373b;
+  font-size: 15px;
+  line-height: 1.7;
+}

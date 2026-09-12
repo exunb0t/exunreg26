@@ -6,7 +6,13 @@
     <title>Complete Signup | Exun 2026</title>
     <link rel="icon" href="/assets/favicon.ico" type="image/x-icon" />
     <link rel="stylesheet" href="/css/main.css" />
+    <link rel="stylesheet" href="/css/context-menu.css" />
     <link rel="stylesheet" href="/css/complete.css" />
+    <link rel="stylesheet" href="/css/chat-widget.css" />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/intl-tel-input/17.0.8/css/intlTelInput.min.css"
+    />
     <link rel="stylesheet" href="/css/toast.css" />
   </head>
   <body data-page="complete">
@@ -24,14 +30,15 @@
           <div id="profile-section" class="profile-panel">
             <form class="login-form" id="complete-profile-form" autocomplete="off" spellcheck="false">
               <div class="profile-grid">
+                <div class="form-group mode-group">
+                  <div class="mode-switch" role="radiogroup" aria-label="Registration type">
+                    <button type="button" class="mode-switch__btn" data-mode="school">School Team</button>
+                    <button type="button" class="mode-switch__btn" data-mode="individual">Individual</button>
+                  </div>
+                </div>
                 <div class="form-group" id="institution-field">
                   <label class="form-label" for="institution_name">Institution name</label>
                   <input class="form-input" id="institution_name" name="institution_name" type="text" autocomplete="off" />
-                </div>
-
-                <div class="form-group" id="fullname-field" style="display: none">
-                  <label class="form-label" for="fullname">Full name</label>
-                  <input class="form-input" id="fullname" name="fullname" type="text" autocomplete="off" />
                 </div>
 
                 <div class="form-group phone-half phone-right" id="phone-field">
@@ -54,19 +61,12 @@
                   <input class="form-input" id="principals_email" name="principals_email" type="email" autocomplete="off" />
                 </div>
               </div>
-              <div class="form-group">
-                <label class="checkbox-wrapper" id="individual-wrapper">
-                  <span class="form-label">Individual</span>
-                  <input type="checkbox" id="individual" name="individual" class="checkbox-input" />
-                  <span class="checkbox-custom" aria-hidden="true"></span>
-                </label>
-              </div>
               <div class="form-group button-row">
-                <button class="login-btn" type="button" id="save-profile">
-                  Save profile
-                </button>
                 <button class="btn btn--secondary login-btn" type="button" id="back-to-profile">
                   Back to summary
+                </button>
+                <button class="login-btn" type="button" id="save-profile">
+                  Save profile
                 </button>
               </div>
             </form>
@@ -79,6 +79,10 @@
 
     <script src="/js/api.js"></script>
     <script src="/js/utils.js"></script>
+    <script src="/js/chat-widget.js"></script>
+    <script src="/js/context-menu.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/intl-tel-input/17.0.8/js/intlTelInput.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/intl-tel-input/17.0.8/js/utils.js"></script>
     <script src="/js/complete.js"></script>
   </body>
 </html>

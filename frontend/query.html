@@ -6,6 +6,7 @@
     <title>Queries | Exun 2026</title>
     <link rel="icon" href="/assets/favicon.ico" type="image/x-icon" />
     <link rel="stylesheet" href="/css/main.css" />
+    <link rel="stylesheet" href="/css/context-menu.css" />
     <link rel="stylesheet" href="/css/navbar.css" />
     <link rel="stylesheet" href="/css/footer.css" />
     <link rel="stylesheet" href="/css/query.css" />
@@ -51,11 +52,18 @@
           <p class="text-muted">No answers yet. Ask a question to get started.</p>
         </div>
       </section>
+      <section class="tickets-section" id="tickets-section" style="display: none;">
+        <div class="container">
+          <h2 class="faq-title">My Tickets</h2>
+          <div id="tickets-container"></div>
+        </div>
+      </section>
     </main>
     <div id="footer-container"></div>
 
     <script src="/js/api.js"></script>
     <script src="/js/utils.js"></script>
+    <script src="/js/context-menu.js"></script>
     <script src="/js/navigation.js"></script>
     <script src="/js/chat-widget.js"></script>
     <script src="/js/query.js"></script>

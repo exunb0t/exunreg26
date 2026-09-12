@@ -47,8 +47,6 @@ export function setupRoutes() {
     app.post('/api/auth/login', handlers.login)
     app.post('/api/auth/signup', handlers.signup)
     app.post('/api/auth/verify-otp', authHandlers.verifyOTP)
-    app.get('/api/auth/google', authHandlers.startGoogleOAuth)
-    app.get('/api/auth/google/callback', authHandlers.handleGoogleOAuthCback)
 
     app.post('/api/auth/logout', authHandlers.logout)
 
@@ -61,12 +59,14 @@ export function setupRoutes() {
     app.get('/api/events/*', cacheMiddleware(60), handlers.getEvent)
 
     app.post('/api/query', authRequired, queryHandlers.queryHandler)
+    app.get('/api/tickets/mine', authRequired, queryHandlers.listMyTickets)
 
     app.post('/api/chat/conversations', authRequired, chatHandlers.createConversation)
     app.get('/api/chat/conversations', authRequired, chatHandlers.listConversations)
     app.get('/api/chat/conversations/:id', authRequired, chatHandlers.getConversation)
     app.delete('/api/chat/conversations/:id', authRequired, chatHandlers.deleteConversation)
     app.post('/api/chat/conversations/:id/messages', authRequired, chatHandlers.sendMessage)
+    app.patch('/api/chat/conversations/:cid/messages/:mid', authRequired, chatHandlers.updateMessage)
     app.post('/api/chat/conversations/:id/escalate', authRequired, chatHandlers.escalateConversation)
 
     app.post('/api/submit_registrations', authRequired, regHandlers.submitRegistrations)

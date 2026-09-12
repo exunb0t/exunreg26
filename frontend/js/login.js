@@ -85,13 +85,6 @@ class LoginPage {
     return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email || "");
   }
 
-  setStatus(elId, message, kind) {
-    const el = document.getElementById(elId);
-    if (!el) return;
-    el.textContent = message || "";
-    el.dataset.kind = kind || "";
-  }
-
   async handleEmailSubmit(e) {
     e.preventDefault();
     const emailEl = document.getElementById("email");
@@ -103,26 +96,21 @@ class LoginPage {
     }
     const submitBtn = e.target.querySelector('button[type="submit"]');
     Utils.setLoading(submitBtn, true);
-    this.setStatus("auth-status", "Sending OTP...");
     try {
       const resp = await window.ExunServices.auth.sendOTP(email);
       const data = (resp && resp.data) || {};
       this.currentEmail = email;
       this.showOTPForm(data);
       if (data.reused) {
-        this.setStatus("otp-status", "An OTP was already sent to this email. It stays valid for 10 minutes. Please check your inbox and spam folder.", "info");
         Utils.showToast("OTP already sent. Please check your email.", "info");
       } else if (data.isNewUser) {
-        this.setStatus("otp-status", "OTP sent. A new account will be created when you verify.", "success");
         Utils.showToast("OTP sent. A new account will be created on verification.", "success");
       } else {
-        this.setStatus("otp-status", "OTP sent. Welcome back.", "success");
         Utils.showToast("OTP sent. Welcome back.", "success");
       }
       this.startResendTimer(60);
     } catch (error) {
       const msg = (error && error.message) || "Failed to send OTP";
-      this.setStatus("auth-status", msg, "error");
       Utils.showToast(msg, "error");
     } finally {
       Utils.setLoading(submitBtn, false);
@@ -152,7 +140,6 @@ class LoginPage {
       }, 700);
     } catch (error) {
       const msg = (error && error.message) || "OTP verification failed";
-      this.setStatus("otp-status", msg, "error");
       Utils.showToast(msg, "error");
       if (msg.toLowerCase().includes("expired") || msg.toLowerCase().includes("no otp")) {
         this.clearOTPInputs();
@@ -180,17 +167,14 @@ class LoginPage {
         } catch (e) {}
       }
       if (data.reused) {
-        this.setStatus("otp-status", "Your earlier OTP is still valid for 10 minutes. No new email was sent.", "info");
         Utils.showToast("Earlier OTP still valid. No new email sent.", "info");
       } else {
-        this.setStatus("otp-status", "A fresh OTP was sent to your email. It is valid for 10 minutes.", "success");
         Utils.showToast("New OTP sent to your email", "success");
       }
       this.startResendTimer(60);
       this.clearOTPInputs();
     } catch (error) {
       const msg = (error && error.message) || "Failed to resend OTP";
-      this.setStatus("otp-status", msg, "error");
       Utils.showToast(msg, "error");
     } finally {
       Utils.setLoading(resendLink, false);
@@ -226,7 +210,6 @@ class LoginPage {
     if (authContainer) authContainer.style.display = "block";
     if (otpContainer) otpContainer.style.display = "none";
     this.clearOTPInputs();
-    this.setStatus("otp-status", "");
   }
 
   startResendTimer(seconds) {

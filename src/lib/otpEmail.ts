@@ -1,0 +1,57 @@
+export function renderOtpEmail(otp: string): string {
+    const cells = String(otp || '')
+        .split('')
+        .map(
+            (d) =>
+                `<td align="center" style="width: 3rem; height: 3.5rem; font-size: 1.75rem; font-weight: 700; color: #2977f5; border: 2px solid #2977f5; border-radius: 0.5rem; font-family: 'Trebuchet MS', Arial, sans-serif;">${d}</td>`
+        )
+        .join('')
+    return `<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+</head>
+<body style="margin: 0; padding: 0; color: #000; font-family: 'Trebuchet MS', Arial, sans-serif;">
+    <table role="presentation" style="width: 100%; height: 100%; color: #000; font-family: 'Trebuchet MS', Arial, sans-serif;">
+        <tr>
+            <td align="center" style="padding: 1rem;">
+                <table role="presentation" style="width: 100%; max-width: 600px; background: #fff; border-radius: 0.75rem; border: 2px solid #2977f5; padding: 1.75rem 1.5rem; padding-bottom: 0px;">
+                    <tr>
+                        <td align="center" style="width: 15rem;">
+                            <img src="https://exunclan.com/logo.png" style="width: 8rem;" alt="Exun Clan logo" />
+                            <p style="font-size: 2.5rem; font-weight: 700; color: #2977f5; font-family: 'Trebuchet MS', Arial, sans-serif;">Exun 2026</p>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td align="center">
+                            <h1 style="font-size: 1.5rem; line-height: 2rem; font-weight: 700; margin: 0.25rem; color: #2977f5; font-family: 'Trebuchet MS', Arial, sans-serif;">Login Verification</h1>
+                            <p style="font-size: 0.875rem; line-height: 1.25rem; text-align: center; color: #000; margin: 0.25rem;">Enter this 6-digit code to finish logging in. It expires in 10 minutes.</p>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td align="center" style="padding-top: 2rem;">
+                            <table role="presentation" style="border-collapse: separate; border-spacing: 12px 0;">
+                                <tr>
+                                    ${cells}
+                                </tr>
+                            </table>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>
+                            <div style="width: 100%; border-top: 2px solid #e9ecef; margin-top: 20px; padding-top: 20px;">
+                                <div style="text-align: center; color: #000;">
+                                    <p style="margin-right: 0.6rem;">&copy; Exun Clan</p>
+                                    <p>The Technology Club of Delhi Public School, R.K. Puram</p>
+                                </div>
+                            </div>
+                        </td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+    </table>
+</body>
+</html>`
+}

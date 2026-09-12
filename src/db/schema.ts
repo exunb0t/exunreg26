@@ -190,6 +190,8 @@ export const chatMessages = sqliteTable('chat_messages', {
 
     content: text('content').notNull(),
 
+    edits: text('edits').notNull().default('[]'),
+
     createdAt: text('created_at').notNull().default(sql`CURRENT_TIMESTAMP`),
 }, (t) => ({
     conversationIdx: index('idx_chat_messages_conversation').on(t.conversationId),

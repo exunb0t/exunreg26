@@ -127,6 +127,54 @@
   color: var(--dark-charcoal);
 }
 
+.registration-card__title-link {
+  color: inherit;
+  text-decoration: none;
+}
+
+.registration-card__title-link:hover {
+  color: var(--exun-blue);
+}
+
+.registration-card__head-text {
+  min-width: 0;
+}
+
+.reg-status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 6px;
+  font-size: 14px;
+  color: var(--slate-grey);
+  font-weight: 500;
+}
+
+.reg-status .dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.reg-status .dot--green {
+  background: #16a34a;
+}
+
+.reg-status .dot--gray {
+  background: #9ca3af;
+}
+
+.summary-content .registration-card__actions .btn-delete-reg {
+  background: #dc2626;
+  color: #fff;
+  border: none;
+}
+
+.summary-content .registration-card__actions .btn-delete-reg:hover {
+  background: #b91c1c;
+}
+
 .registration-card__status {
   padding: 6px 18px;
   border-radius: 999px;
@@ -381,6 +429,118 @@
   border-radius: 10px;
 }
 
+.registration-card__expand {
+  cursor: pointer;
+}
+
+.reg-chevron {
+  display: inline-flex;
+  color: var(--exun-blue);
+  transition: transform 0.3s ease;
+  flex-shrink: 0;
+}
+
+.registration-card.expanded .reg-chevron {
+  transform: rotate(180deg);
+}
+
+.reg-inline {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 0.35s ease;
+}
+
+.registration-card.expanded .reg-inline {
+  grid-template-rows: 1fr;
+}
+
+.reg-inline__inner {
+  overflow: hidden;
+  min-height: 0;
+}
+
+.reg-edit {
+  padding-top: 16px;
+  margin-top: 16px;
+  border-top: 1px solid rgba(15, 23, 42, 0.1);
+}
+
+.reg-edit__meta {
+  color: var(--slate-grey);
+  font-size: 14px;
+  margin-bottom: 12px;
+}
+
+.reg-edit__desc {
+  color: #4b5563;
+  font-size: 15px;
+  line-height: 1.7;
+  margin-bottom: 14px;
+}
+
+.reg-edit__rows {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.reg-edit-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr 90px 130px auto;
+  gap: 10px;
+  align-items: center;
+}
+
+.reg-edit-row .btn--tertiary {
+  padding: 8px 14px;
+  height: 44px;
+  white-space: nowrap;
+  border-radius: 10px;
+}
+
+.reg-edit__actions {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+  align-items: center;
+  margin: 6px -8px -8px -8px;
+  padding: 8px;
+  flex-wrap: wrap;
+}
+
+.reg-edit__actions .btn--primary:hover,
+.reg-edit__actions .btn--secondary:hover {
+  transform: none;
+}
+
+.reg-edit__actions .btn--primary:hover {
+  box-shadow: 0 2px 8px rgba(41, 119, 245, 0.35);
+}
+
+.reg-delete-link {
+  margin-right: auto;
+  background: none;
+  border: none;
+  padding: 10px 4px;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  color: #d33f49;
+  opacity: 0.75;
+  cursor: pointer;
+  transition: opacity 0.15s ease;
+}
+
+.reg-delete-link:hover {
+  opacity: 1;
+}
+
+@media (max-width: 640px) {
+  .reg-edit-row {
+    grid-template-columns: 1fr;
+  }
+}
+
 .registrations-grid > .registration-card.registration-card--open {
   grid-column: auto !important;
 }
@@ -464,6 +624,24 @@
   margin-top: 32px;
   padding-top: 24px;
   border-top: 1px solid rgba(56, 58, 60, 0.1);
+  justify-content: space-between;
+  align-items: center;
+}
+
+.summary-actions__left {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+}
+
+.summary-actions__left #logout-btn {
+  background: #dc2626;
+  color: #fff;
+  border: none;
+}
+
+.summary-actions__left #logout-btn:hover {
+  background: #b91c1c;
 }
 
 @media (max-width: 768px) {
@@ -483,6 +661,16 @@
 
   .summary-actions {
     flex-direction: column;
+    align-items: stretch;
+  }
+
+  .summary-actions__left {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .summary-actions .btn {
+    width: 100%;
   }
 
   .profile-section {

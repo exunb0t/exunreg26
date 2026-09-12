@@ -1,13 +1,14 @@
 import type { AppContext } from '../types'
 import { jsonOk, jsonError } from '../lib/response'
-import { deleteCookie, getCookie, setCookie } from 'hono/cookie'
+import { deleteCookie, getCookie } from 'hono/cookie'
 import { getDb } from '../db/client'
 import * as queries from '../db/queries'
 import { sha256Hex, generateAuthToken } from '../lib/crypto'
-import { setAuthCookies, authCookieOpts } from '../lib/cookies'
+import { setAuthCookies } from '../lib/cookies'
 import { getEmailFromCookie, isAuthenticated } from '../middleware/auth'
 import { isAdminEmail } from '../lib/admin'
 import { sendEmail } from '../lib/sendemail'
+import { renderOtpEmail } from '../lib/otpEmail'
 
 const OTP_TTL_MS = 10 * 60 * 1000
 const SESSION_TTL_MS = 30 * 24 * 60 * 60 * 1000
@@ -61,6 +62,13 @@ export async function sendOTP(c: AppContext) {
     const otp = String(100000 + (randBuf[0] % 900000))
     const otpHash = await sha256Hex(otp)
     const expiresAt = new Date(now + OTP_TTL_MS).toISOString()
+    const existingUser = await queries.getUserByEmail(db, email)
+    try {
+        await sendEmail(email, 'Exun 2026 Login OTP', `Your Exun 2026 login OTP is ${otp}. It is valid for 10 minutes.`, c.env, renderOtpEmail(otp))
+    } catch (err) {
+        console.error(`sendOTP email failed for ${email}: ${err instanceof Error ? err.message : String(err)}`)
+        return jsonError(c, 'Failed to send OTP email. Please try again.', 502)
+    }
     if (existingOtp) {
         await queries.updatePasswordResetOtp(db, email, {
             otpHash,
@@ -78,12 +86,6 @@ export async function sendOTP(c: AppContext) {
             requestDay: today,
             attemptCount: 0,
         })
-    }
-    const existingUser = await queries.getUserByEmail(db, email)
-    try {
-        await sendEmail(email, 'Exun 2026 Login OTP', `Your Exun 2026 login OTP is ${otp}. It is valid for 10 minutes.`, c.env)
-    } catch {
-        return jsonError(c, 'Failed to send OTP email. Please try again.', 502)
     }
     return jsonOk(c, { email, reused: false, expiresAt, isNewUser: !existingUser }, existingUser ? 'OTP sent. Welcome back.' : 'OTP sent. A new account will be created on verification.')
 }
@@ -124,61 +126,3 @@ export async function verifyOTP(c: AppContext) {
     return jsonOk(c, { email: payload.email, isNewUser }, isNewUser ? 'Account created. Welcome to Exun 2026.' : 'Login successful. Welcome back.')
 }
 
-export async function startGoogleOAuth(c: AppContext) {
-    const clientId = c.env.GOOGLE_CLIENT_ID
-    if (!clientId) return jsonError(c, 'GOOGLE_CLIENT_ID not configured', 500)
-    const state = crypto.randomUUID()
-    setCookie(c, 'google_oauth_state', state, authCookieOpts(c, 300))
-    const redirectUri = new URL('/api/auth/google/callback', c.req.url).toString()
-    const url = new URL('https://accounts.google.com/o/oauth2/v2/auth')
-    url.searchParams.set('client_id', clientId)
-    url.searchParams.set('redirect_uri', redirectUri)
-    url.searchParams.set('response_type', 'code')
-    url.searchParams.set('scope', 'openid email profile')
-    url.searchParams.set('state', state)
-    return c.redirect(url.toString(), 302)
-}
-
-export async function handleGoogleOAuthCback(c: AppContext) {
-    const code = c.req.query('code')
-    const state = c.req.query('state')
-    const expectedState = getCookie(c, 'google_oauth_state')
-    deleteCookie(c, 'google_oauth_state', { path: '/' })
-    if (!state || !expectedState || state !== expectedState || !code) {
-        return jsonError(c, 'Invalid OAuth state or code', 400)
-    }
-    const clientId = c.env.GOOGLE_CLIENT_ID
-    const clientSecret = c.env.GOOGLE_CLIENT_SECRET
-    if (!clientId || !clientSecret) return jsonError(c, 'Google OAuth credentials not configured', 500)
-    const redirectUri = new URL('/api/auth/google/callback', c.req.url).toString()
-    const tokenRes = await fetch('https://oauth2.googleapis.com/token', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        body: new URLSearchParams({
-            code,
-            client_id: clientId,
-            client_secret: clientSecret,
-            redirect_uri: redirectUri,
-            grant_type: 'authorization_code',
-        }),
-    })
-    if (!tokenRes.ok) return jsonError(c, 'Failed token exchange with Google', 502)
-    const tokenData = await tokenRes.json<{ access_token: string }>()
-    const userRes = await fetch('https://www.googleapis.com/oauth2/v2/userinfo', {
-        headers: { Authorization: `Bearer ${tokenData.access_token}` },
-    })
-    if (!userRes.ok) {
-        return jsonError(c, 'Failed to fetch Google profile', 502)
-    }
-    const googleUser = await userRes.json<{ email?: string }>()
-    if (!googleUser.email) return jsonError(c, 'Google email missing', 400)
-    const db = getDb(c.env)
-    let user = await queries.getUserByEmail(db, googleUser.email)
-    if (!user) {
-        user = await queries.createUser(db, { email: googleUser.email, username: googleUser.email })
-    }
-    const authToken = generateAuthToken()
-    await queries.createSession(db, googleUser.email, authToken, new Date(Date.now() + SESSION_TTL_MS).toISOString())
-    setAuthCookies(c, googleUser.email, authToken, SESSION_TTL_S)
-    return c.redirect('/', 302)
-}

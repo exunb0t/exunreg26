@@ -1,12 +1,17 @@
 <button id="exw-toggle" aria-label="Open messages" aria-expanded="false">
   <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
-  <span class="exw-toggle__label">Messages</span>
+  <span class="exw-toggle__label">Help Center</span>
   <span class="exw-toggle__avatars"></span>
 </button>
 <div id="exw-popup" hidden>
   <aside class="exw-list">
     <div class="exw-list__header">
-      <span class="exw-list__title">Messages</span>
+      <span class="exw-traffic">
+        <button id="exw-l-close" aria-label="Close chat"></button>
+        <button id="exw-l-min" aria-label="Minimize chat"></button>
+        <button id="exw-l-max" aria-label="Expand chat"></button>
+      </span>
+      <span class="exw-list__title">Help Center</span>
       <button class="exw-icon-btn" id="exw-new" aria-label="New conversation">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
       </button>
@@ -26,8 +31,8 @@
       <button class="exw-icon-btn" id="exw-escalate" aria-label="Talk to a human">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 18v-6a9 9 0 0 1 18 0v6"/><path d="M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3zM3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z"/></svg>
       </button>
-      <button class="exw-icon-btn" id="exw-close" aria-label="Close chat">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      <button class="exw-icon-btn" id="exw-delete" aria-label="Delete conversation">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
       </button>
     </div>
     <div class="exw-thread__msgs"></div>

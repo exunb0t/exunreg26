@@ -1,19 +1,24 @@
 document.addEventListener("DOMContentLoaded", async () => {
   if (document.body.dataset.page !== "complete") return;
 
-  const individualCheckbox = document.getElementById("individual");
   const instField = document.getElementById("institution-field");
   const princField = document.getElementById("principal-name-field");
   const princEmailField = document.getElementById("principal-email-field");
-  const fullnameField = document.getElementById("fullname-field");
   const messageEl = document.getElementById("message");
+  const modeBtns = Array.from(document.querySelectorAll(".mode-switch__btn"));
+  const state = { isIndividual: false };
 
-  function toggleFields() {
-    const isInd = individualCheckbox ? individualCheckbox.checked : false;
-    if (instField) instField.style.display = isInd ? "none" : "block";
-    if (princField) princField.style.display = isInd ? "none" : "block";
-    if (princEmailField) princEmailField.style.display = isInd ? "none" : "block";
-    if (fullnameField) fullnameField.style.display = isInd ? "block" : "none";
+  const schoolInputs = ["institution_name", "principals_name", "principals_email"]
+    .map((id) => document.getElementById(id))
+    .filter(Boolean);
+  const schoolGroups = [instField, princField, princEmailField].filter(Boolean);
+
+  function applyMode() {
+    modeBtns.forEach((b) => b.classList.toggle("active", (b.dataset.mode === "individual") === state.isIndividual));
+    schoolInputs.forEach((el) => {
+      el.disabled = state.isIndividual;
+    });
+    schoolGroups.forEach((g) => g.classList.toggle("is-disabled", state.isIndividual));
   }
 
   function setMessage(text, kind) {
@@ -22,8 +27,46 @@ document.addEventListener("DOMContentLoaded", async () => {
     messageEl.dataset.kind = kind || "";
   }
 
-  if (individualCheckbox) {
-    individualCheckbox.addEventListener("change", toggleFields);
+  modeBtns.forEach((b) => {
+    b.addEventListener("click", () => {
+      state.isIndividual = b.dataset.mode === "individual";
+      applyMode();
+    });
+  });
+
+  applyMode();
+
+  let iti = null;
+  const phoneEl = document.getElementById("phone_number");
+  try {
+    if (phoneEl && window.intlTelInput) {
+      iti = window.intlTelInput(phoneEl, {
+        separateDialCode: true,
+        preferredCountries: ["in", "us", "gb", "ae"],
+        initialCountry: "in",
+        utilsScript: "https://cdnjs.cloudflare.com/ajax/libs/intl-tel-input/17.0.8/js/utils.js"
+      });
+    }
+  } catch (e) {
+    iti = null;
+  }
+
+  function phoneValue() {
+    if (iti && phoneEl) {
+      try {
+        return iti.getNumber() || "";
+      } catch (e) {}
+    }
+    return phoneEl ? phoneEl.value.trim() : "";
+  }
+
+  function phoneValid(value) {
+    if (iti && phoneEl) {
+      try {
+        return iti.isValidNumber();
+      } catch (e) {}
+    }
+    return !!value && value.replace(/\D/g, "").length >= 8;
   }
 
   try {
@@ -40,41 +83,44 @@ document.addEventListener("DOMContentLoaded", async () => {
   try {
     const resp = await window.ExunServices.profile.get();
     const user = (resp && resp.data) || {};
-    if (user.fullname) document.getElementById("fullname").value = user.fullname;
-    if (user.phoneNumber) document.getElementById("phone_number").value = user.phoneNumber;
+    if (user.phoneNumber) {
+      try {
+        if (iti) iti.setNumber(user.phoneNumber);
+        else document.getElementById("phone_number").value = user.phoneNumber;
+      } catch (e) {
+        document.getElementById("phone_number").value = user.phoneNumber;
+      }
+    }
     if (user.principalsEmail) document.getElementById("principals_email").value = user.principalsEmail;
     if (user.principalsName) document.getElementById("principals_name").value = user.principalsName;
     if (user.institutionName) document.getElementById("institution_name").value = user.institutionName;
     if (user.address) document.getElementById("address").value = user.address;
-    if (typeof user.individual === "boolean" && individualCheckbox) {
-      individualCheckbox.checked = user.individual;
+    if (typeof user.individual === "boolean") {
+      state.isIndividual = user.individual;
     }
   } catch (err) {}
 
-  toggleFields();
+  applyMode();
 
   document.getElementById("save-profile").addEventListener("click", async (e) => {
     e.preventDefault();
     setMessage("");
 
-    const isInd = individualCheckbox ? individualCheckbox.checked : false;
+    const isInd = state.isIndividual;
     const payload = {
-      fullname: (document.getElementById("fullname").value || "").trim(),
-      phoneNumber: (document.getElementById("phone_number").value || "").trim(),
-      principalsEmail: (document.getElementById("principals_email").value || "").trim(),
-      principalsName: (document.getElementById("principals_name").value || "").trim(),
-      institutionName: (document.getElementById("institution_name").value || "").trim(),
+      phoneNumber: phoneValue(),
       address: (document.getElementById("address").value || "").trim(),
       individual: isInd
     };
+    if (!isInd) {
+      payload.principalsEmail = (document.getElementById("principals_email").value || "").trim();
+      payload.principalsName = (document.getElementById("principals_name").value || "").trim();
+      payload.institutionName = (document.getElementById("institution_name").value || "").trim();
+    }
 
     let error = "";
-    if (isInd && !payload.fullname) {
-      error = "Full name is required";
-    }
-    const digits = payload.phoneNumber.replace(/\D/g, "");
-    if (!error && (!payload.phoneNumber || digits.length < 8)) {
-      error = "Enter a valid phone number";
+    if (!phoneValid(payload.phoneNumber)) {
+      error = "Enter a valid phone number with country code";
     }
     if (!error && !isInd) {
       if (!payload.principalsEmail) {
