@@ -29,7 +29,9 @@ function sizeSponsorImages() {
     var img = imgs[i];
     var h = img.getAttribute('data-height');
     if (!h) h = '80px';
-    img.style.height = h;
+    img.style.maxHeight = h;
+    img.style.height = 'auto';
     img.style.width = 'auto';
+    img.style.maxWidth = '100%';
   }
 }

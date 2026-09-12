@@ -75,8 +75,7 @@
     border-radius: 16px;
     padding: 24px 22px;
     position: sticky;
-    top: 50vh;
-    transform: translateY(-50%);
+    top: 24px;
     max-height: calc(100vh - 48px);
     overflow-y: auto;
 }
@@ -241,7 +240,6 @@
     .brochure-nav {
         order: 1;
         position: static;
-        transform: none;
         max-height: none;
         overflow: visible;
         margin-bottom: 8px;

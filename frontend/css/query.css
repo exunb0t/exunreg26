@@ -11,21 +11,31 @@
 .query-detail-header {
   background: var(--exun-blue);
   color: var(--white);
-  padding: 48px 0 32px 0;
-  margin-bottom: 28px;
+  padding: 72px 0 64px 0;
+  margin-bottom: 40px;
+}
+
+.query-detail-header .container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 }
 
 .query-detail-title {
-  font-size: 4vw;
-  font-weight: 700;
-  margin-bottom: 12px;
+  font-size: clamp(36px, 5vw, 64px);
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+  margin-bottom: 8px;
   text-align: center;
 }
 
 .query-detail-subtitle {
-  font-size: 3vw;
-  opacity: 0.9;
+  font-size: clamp(18px, 2.4vw, 24px);
+  font-weight: 500;
+  opacity: 0.92;
   text-align: center;
+  margin-top: 28px;
 }
 
 @font-face {
@@ -39,14 +49,19 @@
 .query-search {
   display: flex;
   justify-content: center;
-  margin: 18px 0;
+  margin: 32px 0 8px 0;
+  width: 100%;
 }
 
 .query-search-box {
-  position: relative;
-  width: 45%;
-  max-width: 800px;
-  min-width: 220px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: min(760px, 92%);
+  background: #fff;
+  border-radius: 18px;
+  padding: 8px 8px 8px 30px;
+  box-shadow: 0 18px 44px rgba(9, 30, 66, 0.22);
 }
 
 .query-search-icon {
@@ -60,33 +75,43 @@
 }
 
 .query-search-input {
-  width: 100%;
-  padding: 14px 48px 14px 48px;
-  border-radius: 8px;
+  flex: 1;
+  min-width: 0;
+  padding: 14px 0;
+  border-radius: 0;
   border: none;
   outline: none;
+  background: transparent;
   font-family:
-    "OutfitCustom",
+    "Outfit",
     system-ui,
     -apple-system,
     "Segoe UI",
     Roboto,
     "Helvetica Neue",
     Arial;
-  font-size: 1.05rem;
-  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.12);
+  font-size: 17px;
+  color: #111827;
 }
 
 .query-search-button {
-  position: absolute;
-  right: 8px;
-  top: 50%;
-  transform: translateY(-50%);
-  background: white;
+  flex-shrink: 0;
+  background: transparent;
   border: none;
-  padding: 8px;
-  border-radius: 8px;
+  padding: 10px 14px 10px 6px;
   cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.15s ease;
+}
+
+.query-search-button:hover {
+  transform: scale(1.1);
+}
+
+.query-search-button:active {
+  transform: scale(0.95);
 }
 
 .query-search-button svg {
@@ -117,7 +142,13 @@
     font-size: 36px;
   }
   .query-detail-subtitle {
-    font-size: 24px;
+    font-size: 20px;
+  }
+  .query-search-box {
+    padding: 6px 6px 6px 22px;
+  }
+  .query-search-button {
+    padding: 8px 10px 8px 4px;
   }
 }
 
@@ -221,4 +252,12 @@
   .faq-item--open .faq-answer {
     padding-bottom: 18px;
   }
+}
+
+.query-results-section {
+  padding: 8px 0 64px 0;
+}
+
+.query-results-section:has(#results > .text-muted:only-child) {
+  display: none;
 }

@@ -1,0 +1,46 @@
+<button id="exw-toggle" aria-label="Open messages" aria-expanded="false">
+  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+  <span class="exw-toggle__label">Messages</span>
+  <span class="exw-toggle__avatars"></span>
+</button>
+<div id="exw-popup" hidden>
+  <aside class="exw-list">
+    <div class="exw-list__header">
+      <span class="exw-list__title">Messages</span>
+      <button class="exw-icon-btn" id="exw-new" aria-label="New conversation">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+      </button>
+    </div>
+    <div class="exw-list__items"></div>
+  </aside>
+  <section class="exw-thread">
+    <div class="exw-thread__header">
+      <button class="exw-icon-btn exw-back" id="exw-back" aria-label="Back to conversations">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="15 18 9 12 15 6"/></svg>
+      </button>
+      <span class="exw-thread__avatar"></span>
+      <span class="exw-thread__meta">
+        <span class="exw-thread__title">New conversation</span>
+        <span class="exw-thread__status">Active</span>
+      </span>
+      <button class="exw-icon-btn" id="exw-escalate" aria-label="Talk to a human">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 18v-6a9 9 0 0 1 18 0v6"/><path d="M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3zM3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z"/></svg>
+      </button>
+      <button class="exw-icon-btn" id="exw-close" aria-label="Close chat">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div class="exw-thread__msgs"></div>
+    <form class="exw-thread__input" id="exw-form" autocomplete="off">
+      <input id="exw-input" type="text" placeholder="Message Exunb0t..." maxlength="4000" autocomplete="off" />
+      <button type="submit" id="exw-send" aria-label="Send message" disabled>
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+      </button>
+    </form>
+  </section>
+  <div class="exw-login">
+    <p class="exw-login__title">Chat with Exunb0t</p>
+    <p class="exw-login__text">Login to ask questions and get human help when the AI can't.</p>
+    <button class="exw-login__btn" id="exw-login-btn">Login</button>
+  </div>
+</div>

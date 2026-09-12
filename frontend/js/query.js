@@ -31,8 +31,18 @@ document.addEventListener('DOMContentLoaded', function () {
         qa.innerHTML = esc(item.answer).replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
         body.appendChild(qa);
         btn.addEventListener('click', () => {
-          const open = card.classList.toggle('faq-item--open');
-          btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+          const willOpen = !card.classList.contains('faq-item--open');
+          wrapper.querySelectorAll('.faq-item--open').forEach((other) => {
+            other.classList.remove('faq-item--open');
+            const otherBtn = other.querySelector('.faq-toggle');
+            if (otherBtn) otherBtn.setAttribute('aria-expanded', 'false');
+          });
+          if (willOpen) {
+            card.classList.add('faq-item--open');
+            btn.setAttribute('aria-expanded', 'true');
+          } else {
+            btn.setAttribute('aria-expanded', 'false');
+          }
         });
         card.appendChild(btn);
         card.appendChild(body);
@@ -44,7 +54,6 @@ document.addEventListener('DOMContentLoaded', function () {
 
   const form = document.getElementById('query-form');
   const input = document.getElementById('query-input');
-  const subjectInput = document.getElementById('query-subject');
   const results = document.getElementById('results');
 
   function addResult(subject, message, status) {
@@ -68,7 +77,7 @@ document.addEventListener('DOMContentLoaded', function () {
     form.addEventListener('submit', async function (e) {
       e.preventDefault();
       const message = (input.value || '').trim();
-      const subject = ((subjectInput && subjectInput.value) || message.slice(0, 80) || 'Support query').trim();
+      const subject = (message.slice(0, 80) || 'Support query').trim();
       if (!message) return;
       const session = await window.ExunServices.api.getSession().catch(() => ({ authenticated: false }));
       if (!session.authenticated) {
@@ -81,7 +90,6 @@ document.addEventListener('DOMContentLoaded', function () {
         addResult(subject, message, 'sent');
         Utils.showToast('Query submitted successfully', 'success');
         input.value = '';
-        if (subjectInput) subjectInput.value = '';
       } catch (err) {
         Utils.showToast((err && err.message) || 'Failed to submit query', 'error');
       }

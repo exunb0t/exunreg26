@@ -55,10 +55,6 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   document.getElementById("save-profile").addEventListener("click", async (e) => {
     e.preventDefault();
-    ["fullname", "phone_number", "principals_email"].forEach((id) => {
-      const el = document.getElementById("err_" + id);
-      if (el) el.textContent = "";
-    });
     setMessage("");
 
     const isInd = individualCheckbox ? individualCheckbox.checked : false;
@@ -72,31 +68,25 @@ document.addEventListener("DOMContentLoaded", async () => {
       individual: isInd
     };
 
-    let hasError = false;
+    let error = "";
     if (isInd && !payload.fullname) {
-      document.getElementById("err_fullname").textContent = "Full name is required";
-      hasError = true;
+      error = "Full name is required";
     }
     const digits = payload.phoneNumber.replace(/\D/g, "");
-    if (!payload.phoneNumber || digits.length < 8) {
-      document.getElementById("err_phone_number").textContent = "Enter a valid phone number";
-      hasError = true;
+    if (!error && (!payload.phoneNumber || digits.length < 8)) {
+      error = "Enter a valid phone number";
     }
-    if (!isInd) {
+    if (!error && !isInd) {
       if (!payload.principalsEmail) {
-        document.getElementById("err_principals_email").textContent = "Principal's email is required for teams";
-        hasError = true;
+        error = "Principal's email is required for teams";
       } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(payload.principalsEmail)) {
-        document.getElementById("err_principals_email").textContent = "Enter a valid email address";
-        hasError = true;
-      }
-      if (!payload.institutionName) {
-        Utils.showToast("Institution name is required", "error");
-        hasError = true;
+        error = "Enter a valid email address";
+      } else if (!payload.institutionName) {
+        error = "Institution name is required";
       }
     }
-    if (hasError) {
-      Utils.showToast("Fix the highlighted errors", "error");
+    if (error) {
+      Utils.showToast(error, "error");
       return;
     }
 

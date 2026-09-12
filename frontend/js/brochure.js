@@ -49,6 +49,12 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
     if (contentEl) contentEl.innerHTML = html;
     if (contentEl) {
+      contentEl.querySelectorAll('a[href^="http"]').forEach((a) => {
+        a.target = "_blank";
+        a.rel = "noopener";
+      });
+    }
+    if (contentEl) {
       contentEl.querySelectorAll("thead").forEach((thead) => {
         const ths = thead.querySelectorAll("th");
         if (ths.length > 0 && Array.from(ths).every((th) => !th.textContent.trim())) thead.remove();

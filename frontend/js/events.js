@@ -11,7 +11,7 @@ class EventsPage {
         this.setupFilters();
         this.renderEvents();
         this.setupEventListeners();
-        this.setupSummaryButton();
+        this.trackFilterSlider();
         const focusId = new URLSearchParams(window.location.search).get('focus');
         if (focusId) Utils.focusEventCard(focusId);
     }
@@ -96,6 +96,47 @@ class EventsPage {
     updateActiveFilter(activeButton) {
         document.querySelectorAll('.filter-btn').forEach(btn => btn.classList.remove('filter-btn--active'));
         activeButton.classList.add('filter-btn--active');
+        this.moveFilterSlider(activeButton);
+        const strip = document.querySelector('.events-page__filters');
+        if (strip && strip.scrollWidth > strip.clientWidth + 1) {
+            strip.scrollTo({
+                left: activeButton.offsetLeft - strip.clientWidth / 2 + activeButton.offsetWidth / 2,
+                behavior: 'smooth'
+            });
+        }
+    }
+
+    moveFilterSlider(activeButton) {
+        const container = document.querySelector('.events-page__filters');
+        if (!container || !activeButton) return;
+        let slider = container.querySelector('.filter-slider');
+        if (!slider) {
+            slider = document.createElement('span');
+            slider.className = 'filter-slider';
+            slider.setAttribute('aria-hidden', 'true');
+            container.prepend(slider);
+        }
+        slider.style.transform = `translateX(${activeButton.offsetLeft - 2}px)`;
+        slider.style.top = `${activeButton.offsetTop - 2}px`;
+        slider.style.width = `${activeButton.offsetWidth + 4}px`;
+        slider.style.height = `${activeButton.offsetHeight + 4}px`;
+    }
+
+    trackFilterSlider() {
+        requestAnimationFrame(() => {
+            const active = document.querySelector('.filter-btn--active');
+            if (active) this.moveFilterSlider(active);
+        });
+        window.addEventListener('resize', Utils.debounce(() => {
+            const active = document.querySelector('.filter-btn--active');
+            if (active) this.moveFilterSlider(active);
+        }, 150));
+        if (document.fonts && document.fonts.ready) {
+            document.fonts.ready.then(() => {
+                const active = document.querySelector('.filter-btn--active');
+                if (active) this.moveFilterSlider(active);
+            });
+        }
     }
 
     renderEvents() {

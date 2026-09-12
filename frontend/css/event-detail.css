@@ -24,7 +24,7 @@
   grid-template-columns: 1.55fr 1fr;
   gap: 40px;
   align-items: start;
-  padding-bottom: 64px;
+  padding-bottom: 32px;
 }
 
 .event-detail-main {
@@ -225,7 +225,13 @@
   }
 
   .event-actions {
-    flex-direction: column;
+    gap: 12px;
+  }
+
+  .event-actions__back,
+  .event-actions__register {
+    height: 52px;
+    font-size: 16px;
   }
 }
 

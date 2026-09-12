@@ -16,11 +16,26 @@
 .sponsor-img{
 	display:block;
 	width:auto;
+	height:auto;
+	max-width:100%;
 }
 .sponsors-title{
   text-align:center;
   font-size:28px;
   margin:2rem 0 1rem 0;
   font-weight:700;
+}
+
+@media (max-width: 768px) {
+  .sponsors-row{
+    gap:2rem;
+    padding:1rem 16px;
+  }
+  .sponsor-img{
+    max-height:64px !important;
+  }
+  .sponsors-title{
+    font-size:24px;
+  }
 }
 

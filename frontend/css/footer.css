@@ -20,6 +20,15 @@
     font-size: 14px;
 }
 
+.footer__description .footer__stealth-link,
+.footer__description .footer__stealth-link:hover,
+.footer__copyright .footer__stealth-link,
+.footer__copyright .footer__stealth-link:hover {
+    color: inherit;
+    text-decoration: none;
+    cursor: pointer;
+}
+
 body {
     min-height: 100vh;
     display: flex;

@@ -95,11 +95,10 @@ class LoginPage {
   async handleEmailSubmit(e) {
     e.preventDefault();
     const emailEl = document.getElementById("email");
-    const errorEl = document.getElementById("email-error");
     const email = (emailEl && emailEl.value ? emailEl.value : "").trim();
-    if (errorEl) errorEl.textContent = "";
     if (!this.validateEmail(email)) {
-      if (errorEl) errorEl.textContent = "Please enter a valid email address";
+      Utils.showToast("Please enter a valid email address", "error");
+      if (emailEl) emailEl.focus();
       return;
     }
     const submitBtn = e.target.querySelector('button[type="submit"]');

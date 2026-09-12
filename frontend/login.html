@@ -21,7 +21,7 @@
         </div>
 
         <div id="auth-container">
-          <form class="login-form" id="auth-form">
+          <form class="login-form" id="auth-form" novalidate>
             <div class="form-group">
               <label for="email" class="form-label">Email Address</label>
               <input
@@ -33,7 +33,6 @@
                 autocomplete="email"
                 required
               />
-              <div id="email-error" class="form-error"></div>
             </div>
             <button type="submit" class="login-btn" id="auth-submit">
               Send OTP
