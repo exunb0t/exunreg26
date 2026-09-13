@@ -3,7 +3,7 @@ export function renderOtpEmail(otp: string): string {
         .split('')
         .map(
             (d) =>
-                `<td align="center" style="width: 3rem; height: 3.5rem; font-size: 1.75rem; font-weight: 700; color: #2977f5; border: 2px solid #2977f5; border-radius: 0.5rem; font-family: 'Trebuchet MS', Arial, sans-serif;">${d}</td>`
+                `<td align="center" style="width: 3rem; height: 3.5rem; font-size: 1.75rem; font-weight: 600; color: #2977f5; border: 2px solid #2977f5; border-radius: 0.5rem; font-family: 'Trebuchet MS', Arial, sans-serif;">${d}</td>`
         )
         .join('')
     return `<!DOCTYPE html>
@@ -20,12 +20,12 @@ export function renderOtpEmail(otp: string): string {
                     <tr>
                         <td align="center" style="width: 15rem;">
                             <img src="https://exunclan.com/logo.png" style="width: 8rem;" alt="Exun Clan logo" />
-                            <p style="font-size: 2.5rem; font-weight: 700; color: #2977f5; font-family: 'Trebuchet MS', Arial, sans-serif;">Exun 2026</p>
+                            <p style="font-size: 2.5rem; font-weight: 600; color: #2977f5; font-family: 'Trebuchet MS', Arial, sans-serif;">Exun 2026</p>
                         </td>
                     </tr>
                     <tr>
                         <td align="center">
-                            <h1 style="font-size: 1.5rem; line-height: 2rem; font-weight: 700; margin: 0.25rem; color: #2977f5; font-family: 'Trebuchet MS', Arial, sans-serif;">Login Verification</h1>
+                            <h1 style="font-size: 1.5rem; line-height: 2rem; font-weight: 600; margin: 0.25rem; color: #2977f5; font-family: 'Trebuchet MS', Arial, sans-serif;">Login Verification</h1>
                             <p style="font-size: 0.875rem; line-height: 1.25rem; text-align: center; color: #000; margin: 0.25rem;">Enter this 6-digit code to finish logging in. It expires in 10 minutes.</p>
                         </td>
                     </tr>

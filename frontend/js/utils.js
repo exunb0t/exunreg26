@@ -76,13 +76,22 @@ function renderMarkdown(src) {
 }
 
 function showToast(message, type = "info") {
+  let stack = document.getElementById("toast-stack");
+  if (!stack) {
+    stack = document.createElement("div");
+    stack.id = "toast-stack";
+    document.body.appendChild(stack);
+  }
+  while (stack.children.length >= 4) {
+    stack.firstChild.remove();
+  }
   const toast = document.createElement("div");
   toast.className = `toast toast--${type}`;
   toast.textContent = message;
-  document.body.appendChild(toast);
-  setTimeout(() => {
+  stack.appendChild(toast);
+  requestAnimationFrame(() => {
     toast.classList.add("toast--show");
-  }, 100);
+  });
   setTimeout(() => {
     toast.classList.remove("toast--show");
     setTimeout(() => {

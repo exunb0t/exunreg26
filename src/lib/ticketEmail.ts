@@ -15,7 +15,7 @@ function priorityBadge(priority: string): string {
               ? 'color: #4b5563; background: #f4f5f7; border: 1px solid #e2e6ee;'
               : 'color: #1f66d6; background: rgba(41, 119, 245, 0.1); border: 1px solid rgba(41, 119, 245, 0.35);'
     const label = p.charAt(0).toUpperCase() + p.slice(1)
-    return `<span style="display: inline-block; padding: 0.3rem 0.9rem; border-radius: 999px; font-size: 0.8rem; font-weight: 700; ${colors} font-family: 'Trebuchet MS', Arial, sans-serif;">${esc(label)} priority</span>`
+    return `<span style="display: inline-block; padding: 0.3rem 0.9rem; border-radius: 999px; font-size: 0.8rem; font-weight: 600; ${colors} font-family: 'Trebuchet MS', Arial, sans-serif;">${esc(label)} priority</span>`
 }
 
 function shell(heading: string, intro: string, body: string, cta?: { href: string; label: string }): string {
@@ -33,12 +33,12 @@ function shell(heading: string, intro: string, body: string, cta?: { href: strin
                     <tr>
                         <td align="center" style="background: #2977f5; padding: 1.75rem 1.5rem 1.5rem;">
                             <img src="https://exunclan.com/logo.png" style="width: 7rem; background: #ffffff; border-radius: 0.5rem; padding: 0.4rem 0.8rem;" alt="Exun Clan logo" />
-                            <p style="margin: 0.75rem 0 0; font-size: 1.1rem; font-weight: 700; letter-spacing: 0.25em; color: #ffffff; font-family: 'Trebuchet MS', Arial, sans-serif;">EXUN 2026 · SUPPORT</p>
+                            <p style="margin: 0.75rem 0 0; font-size: 1.1rem; font-weight: 600; letter-spacing: 0.25em; color: #ffffff; font-family: 'Trebuchet MS', Arial, sans-serif;">EXUN 2026 · SUPPORT</p>
                         </td>
                     </tr>
                     <tr>
                         <td align="center" style="padding: 1.75rem 2rem 0.5rem;">
-                            <h1 style="margin: 0; font-size: 1.5rem; font-weight: 700; color: #111827; font-family: 'Trebuchet MS', Arial, sans-serif;">${heading}</h1>
+                            <h1 style="margin: 0; font-size: 1.5rem; font-weight: 600; color: #111827; font-family: 'Trebuchet MS', Arial, sans-serif;">${heading}</h1>
                             <p style="margin: 0.5rem 0 0; font-size: 0.9rem; line-height: 1.5; color: #4b5563;">${intro}</p>
                         </td>
                     </tr>
@@ -51,7 +51,7 @@ function shell(heading: string, intro: string, body: string, cta?: { href: strin
                         cta
                             ? `<tr>
                         <td align="center" style="padding: 1.5rem 2rem 0;">
-                            <a href="${cta.href}" style="display: inline-block; background: #2977f5; color: #ffffff; text-decoration: none; font-weight: 700; font-size: 1rem; padding: 0.85rem 2.25rem; border-radius: 999px; font-family: 'Trebuchet MS', Arial, sans-serif;">${cta.label} &rarr;</a>
+                            <a href="${cta.href}" style="display: inline-block; background: #2977f5; color: #ffffff; text-decoration: none; font-weight: 600; font-size: 1rem; padding: 0.85rem 2.25rem; border-radius: 999px; font-family: 'Trebuchet MS', Arial, sans-serif;">${cta.label} &rarr;</a>
                         </td>
                     </tr>`
                             : ''
@@ -73,8 +73,8 @@ function heroId(displayId: string): string {
     return `<table role="presentation" style="width: 100%; background: rgba(41, 119, 245, 0.07); border-radius: 0.75rem;" cellpadding="0" cellspacing="0">
         <tr>
             <td align="center" style="padding: 1rem;">
-                <p style="margin: 0; font-size: 0.75rem; letter-spacing: 0.2em; font-weight: 700; color: #6b7280;">TICKET ID</p>
-                <p style="margin: 0.25rem 0 0; font-size: 1.9rem; font-weight: 700; color: #2977f5; letter-spacing: 0.04em;">${esc(displayId)}</p>
+                <p style="margin: 0; font-size: 0.75rem; letter-spacing: 0.2em; font-weight: 600; color: #6b7280;">TICKET ID</p>
+                <p style="margin: 0.25rem 0 0; font-size: 1.9rem; font-weight: 600; color: #2977f5; letter-spacing: 0.04em;">${esc(displayId)}</p>
             </td>
         </tr>
     </table>`
@@ -83,8 +83,8 @@ function heroId(displayId: string): string {
 function facts(category: string, priority: string, email?: string): string {
     return `<table role="presentation" style="width: 100%; margin-top: 1rem;" cellpadding="0" cellspacing="0">
         <tr>
-            <td style="font-size: 0.8rem; font-weight: 700; color: #6b7280; padding-bottom: 0.25rem;">CATEGORY</td>
-            <td style="font-size: 0.8rem; font-weight: 700; color: #6b7280; padding-bottom: 0.25rem;">PRIORITY</td>
+            <td style="font-size: 0.8rem; font-weight: 600; color: #6b7280; padding-bottom: 0.25rem;">CATEGORY</td>
+            <td style="font-size: 0.8rem; font-weight: 600; color: #6b7280; padding-bottom: 0.25rem;">PRIORITY</td>
         </tr>
         <tr>
             <td style="font-size: 0.95rem; color: #111827; padding-bottom: 0.75rem;">${esc(category)}</td>
@@ -92,7 +92,7 @@ function facts(category: string, priority: string, email?: string): string {
         </tr>
         ${
             email
-                ? `<tr><td colspan="2" style="font-size: 0.8rem; font-weight: 700; color: #6b7280; padding-bottom: 0.25rem;">FROM</td></tr>
+                ? `<tr><td colspan="2" style="font-size: 0.8rem; font-weight: 600; color: #6b7280; padding-bottom: 0.25rem;">FROM</td></tr>
         <tr><td colspan="2" style="font-size: 0.95rem; color: #111827; padding-bottom: 0.75rem;">${esc(email)}</td></tr>`
                 : ''
         }
@@ -100,7 +100,7 @@ function facts(category: string, priority: string, email?: string): string {
 }
 
 function messageBox(subject: string, message: string): string {
-    return `<p style="margin: 0.5rem 0 0; font-size: 1.05rem; font-weight: 700; color: #111827;">${esc(subject)}</p>
+    return `<p style="margin: 0.5rem 0 0; font-size: 1.05rem; font-weight: 600; color: #111827;">${esc(subject)}</p>
     <div style="margin-top: 0.5rem; background: #f4f5f7; border-radius: 0.75rem; padding: 1rem 1.25rem; font-size: 0.9rem; line-height: 1.6; color: #1f2937;">${esc(message).replace(/\n/g, '<br />')}</div>`
 }
 
@@ -128,4 +128,52 @@ export function renderTicketUserEmail(t: TicketMailData): string {
         'Thanks for reaching out. Our team will get back to you by email shortly.',
         heroId(t.displayId) + facts(t.category, t.priority) + messageBox(t.subject, t.message)
     )
+}
+
+export interface TicketReplyMail {
+    message: string
+    repliedBy?: string | null
+    createdAt?: string | null
+}
+
+function replyBox(reply: TicketReplyMail, index: number): string {
+    const by = reply.repliedBy ? ` · ${esc(reply.repliedBy)}` : ''
+    return `<p style="margin: 1rem 0 0; font-size: 0.8rem; font-weight: 600; letter-spacing: 0.12em; color: #1f66d6;">REPLY ${index}${by}</p>
+    <div style="margin-top: 0.4rem; background: rgba(41, 119, 245, 0.07); border: 1px solid rgba(41, 119, 245, 0.2); border-radius: 0.75rem; padding: 1rem 1.25rem; font-size: 0.9rem; line-height: 1.6; color: #1f2937;">${esc(reply.message).replace(/\n/g, '<br />')}</div>`
+}
+
+export function renderReplyThreadEmail(
+    t: TicketMailData,
+    replies: TicketReplyMail[],
+    threadUrl?: string
+): string {
+    return shell(
+        'New reply on your ticket',
+        'Our support team replied to your ticket. The full conversation is below.',
+        heroId(t.displayId) +
+            facts(t.category, t.priority) +
+            messageBox(t.subject, t.message) +
+            replies.map((r, i) => replyBox(r, i + 1)).join(''),
+        threadUrl ? { href: threadUrl, label: 'View full thread' } : undefined
+    )
+}
+
+export function renderReplyThreadText(
+    t: TicketMailData,
+    replies: TicketReplyMail[]
+): string {
+    const parts = [
+        `Ticket ${t.displayId}: ${t.subject}`,
+        '',
+        `Your message:`,
+        t.message,
+        '',
+    ]
+    replies.forEach((r, i) => {
+        parts.push(`--- Reply ${i + 1}${r.repliedBy ? ` from ${r.repliedBy}` : ''} ---`)
+        parts.push(r.message)
+        parts.push('')
+    })
+    parts.push('-- Exun Clan')
+    return parts.join('\n')
 }

@@ -283,7 +283,7 @@
   border-radius: 10px;
   padding: 2px 6px;
   font-size: 10px;
-  font-weight: 700;
+  font-weight: 600;
   min-width: 16px;
   height: 16px;
   display: flex;
@@ -687,7 +687,7 @@
 .hint-message .message-content h6 {
   color: rgba(0, 0, 0, 0.98);
   margin: 20px 0 12px 0;
-  font-weight: 700;
+  font-weight: 600;
   letter-spacing: -0.025em;
   font-family: "Inter", sans-serif;
 }
@@ -808,7 +808,7 @@
 }
 
 .hint-message .message-content strong {
-  font-weight: 700;
+  font-weight: 600;
   color: rgba(0, 0, 0, 0.98);
 }
 
@@ -1291,7 +1291,7 @@
 
 .locked-notice-title {
   font-size: 1.1rem;
-  font-weight: 700;
+  font-weight: 600;
   color: #ff6b6b;
   margin-bottom: 0.5rem;
 }

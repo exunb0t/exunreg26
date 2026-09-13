@@ -10,7 +10,7 @@
 
 .summary-title {
   font-size: 36px;
-  font-weight: 700;
+  font-weight: 600;
   color: var(--dark-charcoal);
   margin-bottom: 16px;
 }
@@ -38,7 +38,7 @@
 
 .summary-stat__value {
   font-size: 32px;
-  font-weight: 700;
+  font-weight: 600;
   color: var(--exun-blue);
   margin-bottom: 8px;
 }

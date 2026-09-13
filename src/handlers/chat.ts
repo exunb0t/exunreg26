@@ -330,7 +330,7 @@ export async function escalateConversation(c: AppContext) {
         subject: `Help request: ${ticketMessage.slice(0, 80)}`,
         message: ticketMessage,
         createdBy: 'user',
-    })
+    }, (promise) => c.executionCtx.waitUntil(promise))
 
     await queries.createChatMessage(db, {
         conversationId: id,

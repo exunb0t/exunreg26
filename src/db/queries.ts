@@ -1,6 +1,6 @@
-import { and, desc, eq, lt, sql, type SQL } from 'drizzle-orm'
+import { and, asc, desc, eq, lt, sql, type SQL } from 'drizzle-orm'
 import type { Db } from './client'
-import { users, events, registrations, individualRegistrations, logs, oauthTokens, passwordResetOtps, authSessions, queries, conversations, chatMessages, kbSources, kbChunks, tickets, usrRegs } from './schema'
+import { users, events, registrations, individualRegistrations, logs, oauthTokens, passwordResetOtps, authSessions, queries, conversations, chatMessages, kbSources, kbChunks, tickets, ticketReplies, usrRegs } from './schema'
 import type { Participant } from '../types'
 
 export type UserRow = typeof users.$inferSelect
@@ -561,6 +561,22 @@ export async function getTicketsByUserEmail(db: Db, email: string, limit: number
         .where(eq(tickets.userEmail, email))
         .orderBy(desc(tickets.createdAt))
         .limit(limit)
+}
+
+export type TicketReplyRow = typeof ticketReplies.$inferSelect
+export type TicketReplyInsert = typeof ticketReplies.$inferInsert
+
+export async function createTicketReply(db: Db, data: TicketReplyInsert): Promise<TicketReplyRow> {
+    const rows = await db.insert(ticketReplies).values(data).returning()
+    return rows[0]
+}
+
+export async function getTicketReplies(db: Db, ticketId: number): Promise<TicketReplyRow[]> {
+    return db
+        .select()
+        .from(ticketReplies)
+        .where(eq(ticketReplies.ticketId, ticketId))
+        .orderBy(asc(ticketReplies.id))
 }
 
 export async function getRegistrationByEventUser(

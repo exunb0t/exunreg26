@@ -49,7 +49,7 @@
   align-items: center;
   justify-content: center;
   font-size: 13px;
-  font-weight: 700;
+  font-weight: 600;
   color: #fff;
 }
 
@@ -109,7 +109,7 @@
 
 .exw-list__title {
   font-size: 19px;
-  font-weight: 700;
+  font-weight: 600;
   color: #111827;
 }
 
@@ -173,7 +173,7 @@
   align-items: center;
   justify-content: center;
   font-size: 17px;
-  font-weight: 700;
+  font-weight: 600;
   color: #fff;
   overflow: hidden;
 }
@@ -297,7 +297,7 @@
 
 .exw-thread__title {
   font-size: 15px;
-  font-weight: 700;
+  font-weight: 600;
   color: #111827;
   white-space: nowrap;
   overflow: hidden;
@@ -615,7 +615,7 @@
 
 .exw-login__title {
   font-size: 20px;
-  font-weight: 700;
+  font-weight: 600;
   color: #111827;
   margin: 0;
 }

@@ -84,8 +84,12 @@ class AdminPage {
         if (this.currentTab === 'overview') {
             content.innerHTML = `
                 <div class="admin-overview">
-                    <h3>System Overview</h3>
-                    <p>Users: ${Utils.escapeHtml(String(this.stats.users ?? 0))} · Events: ${Utils.escapeHtml(String(this.stats.events ?? 0))} · Registrations: ${Utils.escapeHtml(String(this.stats.registrations ?? 0))}</p>
+                    <div class="admin-section-head"><h3>System Overview</h3></div>
+                    <div class="admin-stat-grid">
+                        <div class="admin-stat"><span class="admin-stat__num">${Utils.escapeHtml(String(this.stats.users ?? 0))}</span><span class="admin-stat__label">Users</span></div>
+                        <div class="admin-stat"><span class="admin-stat__num">${Utils.escapeHtml(String(this.stats.events ?? 0))}</span><span class="admin-stat__label">Events</span></div>
+                        <div class="admin-stat"><span class="admin-stat__num">${Utils.escapeHtml(String(this.stats.registrations ?? 0))}</span><span class="admin-stat__label">Registrations</span></div>
+                    </div>
                 </div>`;
         } else if (this.currentTab === 'events') {
             await this.renderEvents();
@@ -108,12 +112,14 @@ class AdminPage {
                     const resp = await window.ExunServices.admin.getUserDetails(id);
                     const u = (resp && resp.data) || {};
                     document.getElementById('users-table-container').innerHTML = `
+                        <div class="admin-table-wrap">
                         <table class="admin-table"><tbody>
                             <tr><th>Name</th><td>${Utils.escapeHtml(u.fullname || u.username || '')}</td></tr>
                             <tr><th>Email</th><td>${Utils.escapeHtml(u.email || '')}</td></tr>
                             <tr><th>School</th><td>${Utils.escapeHtml(u.institutionName || '')}</td></tr>
                             <tr><th>Phone</th><td>${Utils.escapeHtml(u.phoneNumber || '')}</td></tr>
-                        </tbody></table>`;
+                        </tbody></table>
+                        </div>`;
                 } catch (err) {
                     Utils.showToast((err && err.message) || 'User not found', 'error');
                 }
@@ -137,10 +143,12 @@ class AdminPage {
                     const resp = await window.ExunServices.admin.getEventRegistrations(eventId);
                     const regs = (resp && resp.data) || [];
                     document.getElementById('registrations-content').innerHTML = `
+                        <div class="admin-table-wrap">
                         <table class="admin-table">
                             <thead><tr><th>ID</th><th>User</th><th>Team</th><th>Status</th></tr></thead>
-                            <tbody>${regs.map((r) => `<tr><td>${Utils.escapeHtml(String(r.id))}</td><td>${Utils.escapeHtml(String(r.userId))}</td><td>${Utils.escapeHtml(r.teamName || '')}</td><td>${Utils.escapeHtml(r.status || '')}</td></tr>`).join('')}</tbody>
-                        </table>`;
+                            <tbody>${regs.map((r) => `<tr><td>${Utils.escapeHtml(String(r.id))}</td><td>${Utils.escapeHtml(String(r.userId))}</td><td>${Utils.escapeHtml(r.teamName || '')}</td><td>${Utils.escapeHtml(r.status || '')}</td></tr>`).join('') || '<tr><td colspan="4">No registrations</td></tr>'}</tbody>
+                        </table>
+                        </div>`;
                 } catch (err) {
                     Utils.showToast((err && err.message) || 'Failed to load registrations', 'error');
                 }
@@ -158,11 +166,11 @@ class AdminPage {
         const content = document.getElementById('admin-content');
         content.innerHTML = `
             <div class="admin-events">
-                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+                <div class="admin-section-head">
                     <h3>Event Management</h3>
                     <button class="btn btn--primary" id="new-event-btn">New event</button>
                 </div>
-                <div class="admin-table-container">
+                <div class="admin-table-wrap">
                     <table class="admin-table">
                         <thead><tr><th>Event Name</th><th>Mode</th><th>Participants</th><th>Registrations</th><th>Actions</th></tr></thead>
                         <tbody>
@@ -341,38 +349,73 @@ class AdminPage {
         });
     }
 
+    ticketStatusPill(status) {
+        const s = String(status || 'open').toLowerCase();
+        const cls = s === 'closed' ? 'pill--closed' : s === 'answered' ? 'pill--answered' : 'pill--open';
+        return `<span class="pill ${cls}">${Utils.escapeHtml(s)}</span>`;
+    }
+
+    ticketPriorityPill(priority) {
+        const p = String(priority || '').toLowerCase();
+        const cls = p === 'high' ? 'pill--high' : p === 'medium' ? 'pill--medium' : p === 'low' ? 'pill--low' : 'pill--neutral';
+        return `<span class="pill ${cls}">${Utils.escapeHtml(p || '—')}</span>`;
+    }
+
+    ticketStamp(iso) {
+        try {
+            const s = String(iso || '').trim();
+            if (!s) return '';
+            const d = s.includes('T') ? new Date(s) : new Date(s.replace(' ', 'T') + 'Z');
+            if (Number.isNaN(d.getTime())) return '';
+            return d.toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
+        } catch (e) {
+            return '';
+        }
+    }
+
+    setTicketRowStatus(row, status) {
+        if (!row) return;
+        const cell = row.querySelector('[data-status-cell]');
+        if (cell) cell.innerHTML = this.ticketStatusPill(status);
+    }
+
     async renderTickets() {
         const content = document.getElementById('admin-content');
+        if (this.ticketFilter === undefined) this.ticketFilter = '';
+        const opts = [['', 'All'], ['open', 'Open'], ['answered', 'Answered'], ['closed', 'Closed']];
         content.innerHTML = `
             <div class="admin-tickets">
-                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+                <div class="admin-section-head">
                     <h3>Support Tickets</h3>
                     <select id="ticket-filter" class="admin-form__select" style="width:auto;">
-                        <option value="">All</option>
-                        <option value="open">Open</option>
-                        <option value="answered">Answered</option>
-                        <option value="closed">Closed</option>
+                        ${opts.map(([v, label]) => `<option value="${v}" ${this.ticketFilter === v ? 'selected' : ''}>${label}</option>`).join('')}
                     </select>
                 </div>
                 <div id="tickets-table-container"><div class="loading-placeholder">Loading tickets...</div></div>
             </div>`;
         const load = async () => {
             const status = document.getElementById('ticket-filter').value;
+            this.ticketFilter = status;
             try {
                 const resp = await window.ExunServices.admin.listTickets(status || undefined);
                 const list = (resp && resp.data) || [];
                 document.getElementById('tickets-table-container').innerHTML = `
+                    <div class="admin-table-wrap">
                     <table class="admin-table">
                         <thead><tr><th>ID</th><th>Subject</th><th>Email</th><th>By</th><th>Category</th><th>Priority</th><th>Status</th><th>Created</th></tr></thead>
-                        <tbody>${list.map((t) => `<tr data-ticket-id="${t.id}" style="cursor:pointer;"><td>${t.id}</td><td>${Utils.escapeHtml(t.subject || '')}</td><td>${Utils.escapeHtml(t.userEmail || '')}</td><td>${Utils.escapeHtml(t.createdBy || '')}</td><td>${Utils.escapeHtml(t.category || '')}</td><td>${Utils.escapeHtml(t.priority || '')}</td><td>${Utils.escapeHtml(t.status || '')}</td><td>${Utils.escapeHtml(t.createdAt || '')}</td></tr>`).join('') || '<tr><td colspan="8">No tickets</td></tr>'}</tbody>
-                    </table>`;
+                        <tbody>${list.map((t) => `<tr class="ticket-row" data-ticket-id="${t.id}"><td class="cell-nowrap">#${t.id}</td><td class="cell-truncate">${Utils.escapeHtml(t.subject || '')}</td><td class="cell-truncate">${Utils.escapeHtml(t.userEmail || '')}</td><td class="cell-nowrap">${Utils.escapeHtml(t.createdBy || '')}</td><td class="cell-nowrap">${Utils.escapeHtml(t.category || '—')}</td><td data-priority-cell>${this.ticketPriorityPill(t.priority)}</td><td data-status-cell>${this.ticketStatusPill(t.status)}</td><td class="cell-nowrap">${Utils.escapeHtml(this.ticketStamp(t.createdAt) || t.createdAt || '')}</td></tr>`).join('') || '<tr><td colspan="8"><div class="admin-empty">No tickets found.</div></td></tr>'}</tbody>
+                    </table>
+                    </div>`;
                 document.querySelectorAll('[data-ticket-id]').forEach((row) => {
                     row.addEventListener('click', () => {
                         const next = row.nextElementSibling;
                         if (next && next.classList.contains('ticket-detail-row')) {
                             next.remove();
+                            row.classList.remove('ticket-row--open');
                             return;
                         }
+                        document.querySelectorAll('.ticket-row--open').forEach((r) => r.classList.remove('ticket-row--open'));
+                        row.classList.add('ticket-row--open');
                         this.openTicketDetail(Number(row.dataset.ticketId), row);
                     });
                 });
@@ -385,7 +428,6 @@ class AdminPage {
     }
 
     async openTicketDetail(id, anchorRow) {
-        const table = anchorRow ? anchorRow.closest('table') : null;
         const cols = anchorRow ? anchorRow.children.length : 8;
         document.querySelectorAll('.ticket-detail-row').forEach((r) => r.remove());
         if (!anchorRow) return;
@@ -401,42 +443,79 @@ class AdminPage {
             const data = (resp && resp.data) || {};
             const t = data.ticket || {};
             const messages = data.messages || [];
+            const replies = data.replies || [];
+            const seen = new Set();
+            if (t.adminReply) seen.add('admin:' + String(t.adminReply).trim());
+            replies.forEach((r) => seen.add('admin:' + String(r.message || '').trim()));
+            const thread = messages.filter((m) => {
+                const content = String(m.content || '').trim();
+                if (!content) return false;
+                const key = m.role + ':' + content;
+                if (seen.has(key)) return false;
+                seen.add(key);
+                return true;
+            });
+            const threadHtml = thread.length ? `<div class="ticket-thread">${thread.map((m) => {
+                const isAdmin = m.role === 'admin';
+                const body = isAdmin
+                    ? `<div class="md-body">${Utils.renderMarkdown(String(m.content || '').slice(0, 2000))}</div>`
+                    : Utils.escapeHtml(String(m.content || '').slice(0, 2000));
+                return `<div class="tmsg ${isAdmin ? 'tmsg--admin' : 'tmsg--user'}"><span class="tmsg__role">${Utils.escapeHtml(isAdmin ? 'Admin' : 'User')}</span><div>${body}</div></div>`;
+            }).join('')}</div>` : '';
+            const repliesHtml = replies.length
+                ? replies.map((r, i) => {
+                    const tag = replies.length > 1 ? `Reply ${i + 1} of ${replies.length}` : 'Reply';
+                    const meta = [r.repliedBy ? Utils.escapeHtml(r.repliedBy) : '', r.createdAt ? Utils.escapeHtml(this.ticketStamp(r.createdAt) || r.createdAt) : ''].filter(Boolean).join(' · ');
+                    return `<div class="tmsg tmsg--admin"><span class="tmsg__role">${tag}${meta ? ' · ' + meta : ''}</span><div class="md-body">${Utils.renderMarkdown(String(r.message || '').slice(0, 2000))}</div></div>`;
+                }).join('')
+                : (t.adminReply ? `<div class="tmsg tmsg--admin"><span class="tmsg__role">Latest reply${t.repliedBy ? ' · ' + Utils.escapeHtml(t.repliedBy) : ''}</span><div class="md-body">${Utils.renderMarkdown(t.adminReply)}</div></div>` : '');
             cell.innerHTML = `
-                <div class="admin-card">
-                    <h4>#${t.id} ${Utils.escapeHtml(t.subject || '')}</h4>
-                    <p><strong>From:</strong> ${Utils.escapeHtml(t.userEmail || '')} · <strong>Status:</strong> ${Utils.escapeHtml(t.status || '')}${t.category ? ` · <strong>Category:</strong> ${Utils.escapeHtml(t.category)}` : ''}${t.priority ? ` · <strong>Priority:</strong> ${Utils.escapeHtml(t.priority)}` : ''}</p>
-                    <p>${Utils.escapeHtml(t.message || '')}</p>
-                    ${t.adminReply ? `<div class="md-body">${Utils.renderMarkdown(t.adminReply)}</div>` : ''}
-                    ${messages.length ? `<div style="margin:12px 0;display:flex;flex-direction:column;gap:8px;">${messages.map((m) => `<div>${m.role === 'admin' ? `<div class="md-body">${Utils.renderMarkdown(String(m.content || '').slice(0, 2000))}</div>` : `<div><strong>${Utils.escapeHtml(m.role)}:</strong> ${Utils.escapeHtml(String(m.content || '').slice(0, 500))}</div>`}</div>`).join('')}</div>` : ''}
-                    <div style="display:flex;gap:8px;margin-top:12px;align-items:flex-end;">
-                        <textarea id="ticket-reply-input" class="admin-form__textarea" placeholder="Write a reply... (Markdown supported)" rows="3" style="flex:1;resize:vertical;"></textarea>
+                <div class="ticket-detail">
+                    <div>
+                        <h4 class="ticket-detail__title">#${t.id} ${Utils.escapeHtml(t.subject || '')}</h4>
+                        <div class="ticket-detail__meta"><span>${Utils.escapeHtml(t.userEmail || '')}</span>${this.ticketStatusPill(t.status)}${this.ticketPriorityPill(t.priority)}${t.category ? `<span>${Utils.escapeHtml(t.category)}</span>` : ''}</div>
+                    </div>
+                    ${t.message ? `<p class="ticket-detail__message">${Utils.escapeHtml(t.message)}</p>` : ''}
+                    ${repliesHtml}
+                    ${threadHtml}
+                    <div class="ticket-reply-row">
+                        <textarea id="ticket-reply-input" class="admin-form__textarea" placeholder="Write a reply... (Markdown supported)" rows="3"></textarea>
                         <button class="btn btn--primary" id="ticket-reply-send">Reply</button>
                     </div>
-                    <div style="display:flex;gap:8px;margin-top:8px;">
+                    <div class="ticket-status-row">
                         <button class="btn btn--secondary" data-ticket-status="open">Reopen</button>
                         <button class="btn btn--secondary" data-ticket-status="answered">Answered</button>
                         <button class="btn btn--secondary" data-ticket-status="closed">Close</button>
                     </div>
                 </div>`;
-            cell.querySelector('#ticket-reply-send').addEventListener('click', async () => {
-                const message = cell.querySelector('#ticket-reply-input').value.trim();
-                if (!message) return;
+            const sendBtn = cell.querySelector('#ticket-reply-send');
+            sendBtn.addEventListener('click', async () => {
+                const input = cell.querySelector('#ticket-reply-input');
+                const message = input.value.trim();
+                if (!message) {
+                    Utils.showToast('Write a reply first', 'warning');
+                    return;
+                }
+                Utils.setLoading(sendBtn, true);
                 try {
                     await window.ExunServices.admin.replyTicket(id, message);
                     Utils.showToast('Reply sent', 'success');
+                    this.setTicketRowStatus(anchorRow, 'answered');
                     await this.openTicketDetail(id, anchorRow);
                 } catch (err) {
                     Utils.showToast((err && err.message) || 'Reply failed', 'error');
+                } finally {
+                    Utils.setLoading(sendBtn, false);
                 }
             });
             cell.querySelectorAll('[data-ticket-status]').forEach((btn) => {
                 btn.addEventListener('click', async () => {
+                    const next = btn.dataset.ticketStatus;
                     try {
-                        await window.ExunServices.admin.setTicketStatus(id, btn.dataset.ticketStatus);
-                        Utils.showToast('Ticket updated', 'success');
-                        await this.renderTickets();
-                        const row = document.querySelector(`[data-ticket-id="${id}"]`);
-                        if (row) await this.openTicketDetail(id, row);
+                        await window.ExunServices.admin.setTicketStatus(id, next);
+                        Utils.showToast(`Ticket marked ${next}`, 'success');
+                        this.setTicketRowStatus(anchorRow, next);
+                        await this.openTicketDetail(id, anchorRow);
                     } catch (err) {
                         Utils.showToast((err && err.message) || 'Update failed', 'error');
                     }
@@ -446,6 +525,7 @@ class AdminPage {
         } catch (err) {
             Utils.showToast((err && err.message) || 'Failed to load ticket', 'error');
             detailRow.remove();
+            if (anchorRow) anchorRow.classList.remove('ticket-row--open');
         }
     }
 
@@ -472,10 +552,12 @@ class AdminPage {
                 const resp = await window.ExunServices.admin.kbSources();
                 const list = (resp && resp.data) || [];
                 document.getElementById('kb-table-container').innerHTML = `
+                    <div class="admin-table-wrap">
                     <table class="admin-table">
                         <thead><tr><th>ID</th><th>URL</th><th>Title</th><th>Status</th><th>Chunks</th><th>On</th><th>Actions</th></tr></thead>
                         <tbody>${list.map((s) => `<tr><td>${s.id}</td><td style="max-width:280px;overflow:hidden;text-overflow:ellipsis;">${Utils.escapeHtml(s.url || '')}</td><td>${Utils.escapeHtml(s.title || '')}</td><td>${Utils.escapeHtml(s.status || '')}</td><td>${s.chunkCount ?? 0}</td><td><button class="btn btn--secondary" data-kb-toggle="${s.id}">${s.enabled ? 'On' : 'Off'}</button></td><td style="white-space:nowrap;"><button class="btn btn--secondary" data-kb-chunks="${s.id}">Chunks</button> <button class="btn btn--secondary" data-kb-sync="${s.id}">Sync</button> <button class="btn btn--secondary" data-kb-delete="${s.id}">Delete</button></td></tr>`).join('') || '<tr><td colspan="7">No sources</td></tr>'}</tbody>
-                    </table>`;
+                    </table>
+                    </div>`;
                 document.querySelectorAll('[data-kb-chunks]').forEach((btn) => {
                     btn.addEventListener('click', async () => {
                         try {

@@ -48,7 +48,8 @@ export async function queryHandler(c: AppContext) {
             subject: payload.subject,
             message: payload.message,
             createdBy: 'user',
-        }
+        },
+        (promise) => c.executionCtx.waitUntil(promise)
     )
 
 
@@ -84,10 +85,17 @@ export async function listMyTickets(c: AppContext) {
         parseLimit(c, 50, 200)
     )
 
+    const withReplies = await Promise.all(
+        list.map(async (t) => ({
+            ...t,
+            replies: await queries.getTicketReplies(db, t.id),
+        }))
+    )
+
 
     return jsonOk(
         c,
-        list,
+        withReplies,
         'Tickets retrieved'
     )
 }

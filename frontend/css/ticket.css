@@ -99,7 +99,7 @@
 .ticket-side__foot-id {
   margin: 6px 0 0;
   font-size: 15px;
-  font-weight: 700;
+  font-weight: 600;
   letter-spacing: 0.06em;
 }
 
@@ -115,7 +115,7 @@
   gap: 14px;
   font-size: 12px;
   letter-spacing: 0.22em;
-  font-weight: 700;
+  font-weight: 600;
   color: #0f172a;
   margin-bottom: 12px;
 }
@@ -129,7 +129,7 @@
 .ticket-title {
   margin: 0;
   font-size: 22px;
-  font-weight: 700;
+  font-weight: 600;
   color: #111827;
 }
 
@@ -386,7 +386,7 @@
 
 .success-id {
   font-size: 26px;
-  font-weight: 700;
+  font-weight: 600;
   color: #2977f5;
   letter-spacing: 0.04em;
   margin: 6px 0 26px;
@@ -408,7 +408,7 @@
   justify-content: space-between;
   font-size: 12px;
   letter-spacing: 0.22em;
-  font-weight: 700;
+  font-weight: 600;
   color: #0f172a;
 }
 

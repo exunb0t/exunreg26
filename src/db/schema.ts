@@ -275,6 +275,20 @@ export const tickets = sqliteTable('tickets', {
     conversationIdx: index('idx_tickets_conversation').on(t.conversationId),
 }))
 
+export const ticketReplies = sqliteTable('ticket_replies', {
+    id: integer('id').primaryKey({ autoIncrement: true }),
+
+    ticketId: integer('ticket_id').notNull().references(() => tickets.id, { onDelete: 'cascade' }),
+
+    message: text('message').notNull(),
+
+    repliedBy: text('replied_by'),
+
+    createdAt: text('created_at').notNull().default(sql`CURRENT_TIMESTAMP`),
+}, (t) => ({
+    ticketIdx: index('idx_ticket_replies_ticket').on(t.ticketId),
+}))
+
 // QUERY.ts Handler
 
 export const queries = sqliteTable('queries', {

@@ -203,7 +203,7 @@
 .faq-question {
   margin: 0;
   font-size: 18px;
-  font-weight: 600;
+  font-weight: 500;
   color: #33373b;
 }
 .faq-icon {
@@ -299,7 +299,7 @@
 
 .ticket-card__id {
   font-size: 13px;
-  font-weight: 700;
+  font-weight: 600;
   letter-spacing: 0.06em;
   color: #2977f5;
   background: rgba(41, 119, 245, 0.1);
@@ -310,7 +310,7 @@
 .ticket-card__title {
   margin: 0 0 6px;
   font-size: 17px;
-  font-weight: 700;
+  font-weight: 600;
   color: #111827;
 }
 
@@ -359,7 +359,7 @@
 
 .ticket-card__reply-label {
   font-size: 13px;
-  font-weight: 700;
+  font-weight: 600;
   color: var(--exun-blue);
   margin-bottom: 6px;
 }

@@ -5,6 +5,8 @@ import * as queries from '../db/queries'
 import { getEmailFromCookie } from '../middleware/auth'
 import { sendEmail } from '../lib/sendemail'
 import { parseLimit } from '../lib/paging'
+import { ticketDisplayId } from '../lib/tickets'
+import { renderReplyThreadEmail, renderReplyThreadText } from '../lib/ticketEmail'
 
 export async function listTickets(c: AppContext) {
     const db = getDb(c.env)
@@ -31,7 +33,9 @@ export async function getTicket(c: AppContext) {
         ? await queries.getMessagesByConversation(db, ticket.conversationId, 1000)
         : []
 
-    return jsonOk(c, { ticket, messages }, 'Ticket retrieved')
+    const replies = await queries.getTicketReplies(db, id)
+
+    return jsonOk(c, { ticket, messages, replies }, 'Ticket retrieved')
 }
 
 export async function replyTicket(c: AppContext) {
@@ -55,6 +59,14 @@ export async function replyTicket(c: AppContext) {
         status: 'answered',
     })
 
+    await queries.createTicketReply(db, {
+        ticketId: id,
+        message,
+        repliedBy: adminEmail,
+    })
+
+    const replies = await queries.getTicketReplies(db, id)
+
     if (ticket.conversationId) {
         await queries.createChatMessage(db, {
             conversationId: ticket.conversationId,
@@ -63,18 +75,34 @@ export async function replyTicket(c: AppContext) {
         })
     }
 
-    try {
-        await sendEmail(
-            ticket.userEmail,
-            `Re: ${ticket.subject}`,
-            `${message}\n\n---\nThis is a reply to your support ticket #${ticket.id} on the Exun 2026 registration platform.`,
-            c.env
-        )
-    } catch (err: any) {
-        await queries.createLog(db, 'ticket-reply-email-failed', `ticket ${ticket.id}: ${err.message ?? 'unknown error'}`)
+    const displayId = ticketDisplayId(ticket.id)
+    const baseUrl = (c.env.PUBLIC_URL ?? '').replace(/\/$/, '')
+    const threadUrl = baseUrl ? `${baseUrl}/query#tickets-section` : undefined
+    const mailData = {
+        displayId,
+        email: ticket.userEmail,
+        subject: ticket.subject,
+        category: ticket.category ?? 'Other',
+        priority: ticket.priority ?? 'medium',
+        message: ticket.message,
     }
+    c.executionCtx.waitUntil(
+        (async () => {
+            try {
+                await sendEmail(
+                    ticket.userEmail,
+                    `Re: ${ticket.subject}`,
+                    renderReplyThreadText(mailData, replies),
+                    c.env,
+                    renderReplyThreadEmail(mailData, replies, threadUrl)
+                )
+            } catch (err: any) {
+                await queries.createLog(db, 'ticket-reply-email-failed', `ticket ${ticket.id}: ${err.message ?? 'unknown error'}`)
+            }
+        })().catch(() => null)
+    )
 
-    return jsonOk(c, updated, 'Reply sent')
+    return jsonOk(c, { ...updated, replies }, 'Reply sent')
 }
 
 export async function updateTicketStatus(c: AppContext) {

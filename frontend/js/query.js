@@ -69,7 +69,9 @@ document.addEventListener('DOMContentLoaded', function () {
 
   function ticketDate(iso) {
     try {
-      const d = new Date(String(iso || '').trim().replace(' ', 'T') + 'Z');
+      const s = String(iso || '').trim();
+      if (!s) return '';
+      const d = s.includes('T') ? new Date(s) : new Date(s.replace(' ', 'T') + 'Z');
       if (Number.isNaN(d.getTime())) return '';
       return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
     } catch (e) {
@@ -106,7 +108,22 @@ document.addEventListener('DOMContentLoaded', function () {
     msg.className = 'ticket-card__message';
     msg.textContent = t.message || '';
     card.appendChild(msg);
-    if (t.adminReply) {
+    const replies = Array.isArray(t.replies) ? t.replies : [];
+    if (replies.length > 0) {
+      replies.forEach((r, i) => {
+        const reply = document.createElement('div');
+        reply.className = 'ticket-card__reply';
+        const label = document.createElement('div');
+        label.className = 'ticket-card__reply-label';
+        label.textContent = 'Admin reply' + (replies.length > 1 ? ` ${i + 1} of ${replies.length}` : '') + (r.repliedBy ? ' · ' + r.repliedBy : '');
+        const body = document.createElement('div');
+        body.className = 'md-body';
+        body.innerHTML = Utils.renderMarkdown(r.message || '');
+        reply.appendChild(label);
+        reply.appendChild(body);
+        card.appendChild(reply);
+      });
+    } else if (t.adminReply) {
       const reply = document.createElement('div');
       reply.className = 'ticket-card__reply';
       const label = document.createElement('div');

@@ -13,7 +13,7 @@
 
 .admin-title {
     font-size: 32px;
-    font-weight: 700;
+    font-weight: 600;
     color: var(--dark-charcoal);
     text-align: center;
 }
@@ -89,6 +89,7 @@
     margin-bottom: 24px;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
     border: 1px solid rgba(56, 58, 60, 0.1);
+    overflow-x: auto;
 }
 
 .admin-tab {
@@ -101,6 +102,7 @@
     color: var(--slate-grey);
     cursor: pointer;
     transition: all 0.3s ease;
+    white-space: nowrap;
 }
 
 .admin-tab--active {
@@ -119,6 +121,30 @@
     padding: 24px;
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
     border: 1px solid rgba(56, 58, 60, 0.1);
+    overflow: hidden;
+    min-width: 0;
+}
+
+.admin-section-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-bottom: 8px;
+}
+
+.admin-section-head h3 {
+    margin: 0;
+}
+
+.admin-table-wrap,
+.admin-table-container {
+    overflow-x: auto;
+    margin-left: -4px;
+    margin-right: -4px;
+    padding-left: 4px;
+    padding-right: 4px;
 }
 
 .admin-table {
@@ -351,4 +377,211 @@
 
 .md-body a {
   color: #1f66d6;
+}
+
+.pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 12px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.pill--open {
+  background: rgba(41, 119, 245, 0.12);
+  color: #1f66d6;
+}
+
+.pill--answered {
+  background: #2977f5;
+  color: #fff;
+}
+
+.pill--closed {
+  background: rgba(22, 101, 52, 0.12);
+  color: #166534;
+}
+
+.pill--high {
+  background: rgba(239, 68, 68, 0.12);
+  color: #b91c1c;
+}
+
+.pill--medium {
+  background: rgba(245, 158, 11, 0.14);
+  color: #b45309;
+}
+
+.pill--low {
+  background: rgba(15, 23, 42, 0.07);
+  color: #475569;
+}
+
+.pill--neutral {
+  background: rgba(15, 23, 42, 0.07);
+  color: #475569;
+}
+
+.admin-table td.cell-truncate {
+  max-width: 260px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.admin-table td.cell-nowrap {
+  white-space: nowrap;
+}
+
+tr.ticket-row {
+  cursor: pointer;
+}
+
+tr.ticket-row--open td {
+  background: rgba(41, 119, 245, 0.06);
+}
+
+.ticket-detail {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.ticket-detail__title {
+  margin: 0 0 4px;
+  font-size: 17px;
+  font-weight: 600;
+  color: #111827;
+}
+
+.ticket-detail__meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  font-size: 13px;
+  color: #6b7280;
+}
+
+.ticket-detail__message {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.65;
+  color: #374151;
+  background: #fff;
+  border: 1px solid rgba(56, 58, 60, 0.1);
+  border-radius: 10px;
+  padding: 12px 14px;
+}
+
+.ticket-thread {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-height: 320px;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.tmsg {
+  border-radius: 10px;
+  padding: 10px 14px;
+  font-size: 14px;
+  line-height: 1.6;
+  max-width: 100%;
+}
+
+.tmsg__role {
+  display: block;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  margin-bottom: 4px;
+}
+
+.tmsg--admin {
+  background: rgba(41, 119, 245, 0.08);
+  border: 1px solid rgba(41, 119, 245, 0.18);
+  color: #1e293b;
+}
+
+.tmsg--admin .tmsg__role {
+  color: #1f66d6;
+}
+
+.tmsg--user {
+  background: #fff;
+  border: 1px solid rgba(56, 58, 60, 0.12);
+  color: #374151;
+}
+
+.tmsg--user .tmsg__role {
+  color: #6b7280;
+}
+
+.ticket-reply-row {
+  display: flex;
+  gap: 8px;
+  align-items: flex-end;
+}
+
+.ticket-reply-row .admin-form__textarea {
+  flex: 1;
+  min-height: 88px;
+}
+
+.ticket-status-row {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.admin-stat-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 12px;
+}
+
+.admin-stat {
+  background: #f8fafc;
+  border: 1px solid rgba(56, 58, 60, 0.1);
+  border-radius: 10px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.admin-stat__num {
+  font-size: 26px;
+  font-weight: 800;
+  color: #111827;
+}
+
+.admin-stat__label {
+  font-size: 13px;
+  color: #6b7280;
+}
+
+.admin-empty {
+  padding: 28px 16px;
+  text-align: center;
+  color: #6b7280;
+  font-size: 14px;
+}
+
+@media (max-width: 640px) {
+  .ticket-reply-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .ticket-reply-row .btn {
+    width: 100%;
+  }
 }

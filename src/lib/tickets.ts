@@ -17,7 +17,8 @@ export async function openTicket(
         subject: string
         message: string
         createdBy: 'user' | 'ai'
-    }
+    },
+    waitUntil?: (promise: Promise<unknown>) => void
 ): Promise<TicketRow> {
     const ticket = await queries.createTicket(db, {
         conversationId: data.conversationId,
@@ -29,16 +30,20 @@ export async function openTicket(
     })
 
     if (env.TICKET_NOTIFY_EMAIL) {
-        try {
-            await sendEmail(
-                env.TICKET_NOTIFY_EMAIL,
-                `New support ticket #${ticket.id}: ${data.subject}`,
-                `From: ${data.userEmail}\nOpened by: ${data.createdBy === 'ai' ? 'chatbot (low confidence answer)' : 'user request'}\n\n${data.message}`,
-                env
-            )
-        } catch (err: any) {
-            await queries.createLog(db, 'ticket-notify-email-failed', `ticket ${ticket.id}: ${err.message ?? 'unknown error'}`)
-        }
+        const notify = (async () => {
+            try {
+                await sendEmail(
+                    env.TICKET_NOTIFY_EMAIL,
+                    `New support ticket #${ticket.id}: ${data.subject}`,
+                    `From: ${data.userEmail}\nOpened by: ${data.createdBy === 'ai' ? 'chatbot (low confidence answer)' : 'user request'}\n\n${data.message}`,
+                    env
+                )
+            } catch (err: any) {
+                await queries.createLog(db, 'ticket-notify-email-failed', `ticket ${ticket.id}: ${err.message ?? 'unknown error'}`)
+            }
+        })().catch(() => null)
+        if (waitUntil) waitUntil(notify)
+        else await notify
     }
 
     return ticket
