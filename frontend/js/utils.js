@@ -28,6 +28,53 @@ function formatDate(date) {
   });
 }
 
+function renderMarkdown(src) {
+  const inline = (t) => {
+    let h = escapeHtml(t);
+    h = h.replace(/`([^`\n]+)`/g, "<code>$1</code>");
+    h = h.replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>");
+    h = h.replace(/(^|[^*\w])\*([^*\n]+)\*/g, "$1<em>$2</em>");
+    h = h.replace(/\[([^\]]+)\]\((https?:\/\/[^)\s]+)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>');
+    return h;
+  };
+  const lines = String(src == null ? "" : src).split("\n");
+  const parts = [];
+  let para = [];
+  let list = null;
+  const flushPara = () => {
+    if (para.length) parts.push(`<p>${para.map(inline).join("<br>")}</p>`);
+    para = [];
+  };
+  const flushList = () => {
+    if (list) parts.push(`<${list.tag}>${list.items.map((i) => `<li>${inline(i)}</li>`).join("")}</${list.tag}>`);
+    list = null;
+  };
+  for (const line of lines) {
+    const ulm = line.match(/^\s*[-*]\s+(.*)$/);
+    const olm = line.match(/^\s*\d+[.)]\s+(.*)$/);
+    if (ulm || olm) {
+      flushPara();
+      const tag = ulm ? "ul" : "ol";
+      if (!list || list.tag !== tag) {
+        flushList();
+        list = { tag, items: [] };
+      }
+      list.items.push((ulm || olm)[1]);
+    } else if (line.trim() === "") {
+      flushPara();
+      flushList();
+    } else {
+      flushList();
+      const hm = line.match(/^\s*#{1,3}\s+(.*)$/);
+      if (hm) flushPara();
+      para.push(hm ? `**${hm[1]}**` : line);
+    }
+  }
+  flushPara();
+  flushList();
+  return parts.join("");
+}
+
 function showToast(message, type = "info") {
   const toast = document.createElement("div");
   toast.className = `toast toast--${type}`;
@@ -224,11 +271,13 @@ function showConfirmModal(message, title = "Confirm", confirmText = "Confirm", c
     const overlay = document.createElement("div");
     overlay.style.position = "fixed";
     overlay.style.inset = "0";
-    overlay.style.background = "rgba(0,0,0,0.35)";
+    overlay.style.background = "rgba(244, 245, 247, 0.55)";
+    overlay.style.backdropFilter = "blur(14px) saturate(1.25)";
+    overlay.style.webkitBackdropFilter = "blur(14px) saturate(1.25)";
     overlay.style.display = "flex";
     overlay.style.alignItems = "center";
     overlay.style.justifyContent = "center";
-    overlay.style.zIndex = "9999";
+    overlay.style.zIndex = "20000";
     overlay.tabIndex = 0;
     const box = document.createElement("div");
     box.style.background = "#fff";
@@ -309,6 +358,7 @@ window.Utils = {
   isMobile,
   loadComponent,
   formatDate,
+  renderMarkdown,
   showToast,
   debounce,
   validateEmail,

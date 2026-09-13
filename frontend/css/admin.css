@@ -148,6 +148,20 @@
     background: rgba(41, 119, 245, 0.02);
 }
 
+.ticket-detail-row:hover {
+    background: transparent;
+}
+
+.ticket-detail-row > td {
+    background: #f8fafc;
+    padding: 16px 20px;
+    border-bottom: 1px solid rgba(56, 58, 60, 0.1);
+}
+
+.ticket-detail-row .admin-card {
+    margin: 0;
+}
+
 .admin-actions {
     display: flex;
     gap: 8px;
@@ -308,4 +322,33 @@
     .admin-table td {
         padding: 8px 12px;
     }
+}
+
+.md-body p {
+  margin: 0 0 8px;
+}
+
+.md-body p:last-child {
+  margin-bottom: 0;
+}
+
+.md-body ul,
+.md-body ol {
+  margin: 6px 0 8px;
+  padding-left: 20px;
+}
+
+.md-body li {
+  margin: 2px 0;
+}
+
+.md-body code {
+  background: rgba(15, 23, 42, 0.08);
+  border-radius: 6px;
+  padding: 1px 6px;
+  font-size: 13px;
+}
+
+.md-body a {
+  color: #1f66d6;
 }

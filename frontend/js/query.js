@@ -63,20 +63,45 @@ document.addEventListener('DOMContentLoaded', function () {
     return 'ticket-status--open';
   }
 
+  function ticketDisplayId(id) {
+    return `#Ex-${1000 + Number(id || 0)}`;
+  }
+
+  function ticketDate(iso) {
+    try {
+      const d = new Date(String(iso || '').trim().replace(' ', 'T') + 'Z');
+      if (Number.isNaN(d.getTime())) return '';
+      return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+    } catch (e) {
+      return '';
+    }
+  }
+
   function renderTicket(t) {
     const card = document.createElement('div');
     card.className = 'ticket-card';
-    const head = document.createElement('div');
-    head.className = 'ticket-card__header';
-    const title = document.createElement('h4');
-    title.className = 'ticket-card__title';
-    title.textContent = t.subject || 'Untitled';
+    const top = document.createElement('div');
+    top.className = 'ticket-card__top';
+    const idChip = document.createElement('span');
+    idChip.className = 'ticket-card__id';
+    idChip.textContent = ticketDisplayId(t.id);
     const status = document.createElement('span');
     status.className = 'ticket-status ' + ticketStatusClass(t.status);
     status.textContent = String(t.status || 'open').toUpperCase();
-    head.appendChild(title);
-    head.appendChild(status);
-    card.appendChild(head);
+    top.appendChild(idChip);
+    top.appendChild(status);
+    card.appendChild(top);
+    const title = document.createElement('h4');
+    title.className = 'ticket-card__title';
+    title.textContent = t.subject || 'Untitled';
+    card.appendChild(title);
+    const metaBits = [t.category, t.priority ? `Priority: ${t.priority}` : '', ticketDate(t.createdAt)].filter(Boolean);
+    if (metaBits.length) {
+      const meta = document.createElement('p');
+      meta.className = 'ticket-card__meta';
+      meta.textContent = metaBits.join(' · ');
+      card.appendChild(meta);
+    }
     const msg = document.createElement('p');
     msg.className = 'ticket-card__message';
     msg.textContent = t.message || '';
@@ -87,8 +112,9 @@ document.addEventListener('DOMContentLoaded', function () {
       const label = document.createElement('div');
       label.className = 'ticket-card__reply-label';
       label.textContent = 'Admin reply' + (t.repliedBy ? ' · ' + t.repliedBy : '');
-      const body = document.createElement('p');
-      body.textContent = t.adminReply;
+      const body = document.createElement('div');
+      body.className = 'md-body';
+      body.innerHTML = Utils.renderMarkdown(t.adminReply);
       reply.appendChild(label);
       reply.appendChild(body);
       card.appendChild(reply);
@@ -151,7 +177,14 @@ document.addEventListener('DOMContentLoaded', function () {
         addResult(subject, message, 'sent');
         Utils.showToast('Query submitted successfully', 'success');
         input.value = '';
-        loadMyTickets();
+  loadMyTickets().then(() => {
+    if (window.location.hash === '#tickets-section') {
+      const section = document.getElementById('tickets-section');
+      if (section && section.style.display !== 'none') {
+        section.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    }
+  });
       } catch (err) {
         Utils.showToast((err && err.message) || 'Failed to submit query', 'error');
       }

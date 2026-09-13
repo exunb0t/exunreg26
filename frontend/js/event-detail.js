@@ -201,7 +201,7 @@ class EventDetailPage {
       const row = document.createElement("div");
       row.className = "inline-member-row";
       row.style.display = "grid";
-      row.style.gridTemplateColumns = "1fr 1fr 90px 130px auto";
+      row.style.gridTemplateColumns = "1fr 1fr 90px 130px";
       row.style.gap = "12px";
       row.style.marginBottom = "10px";
       const nameVal = String((p && (p.name || p.fullname)) || "").replace(/"/g, "&quot;");
@@ -209,68 +209,45 @@ class EventDetailPage {
       const classVal = String((p && p.class) || "").replace(/"/g, "&quot;");
       const phoneVal = String((p && p.phone) || "").replace(/"/g, "&quot;");
       row.innerHTML = `
-        <input class="form-input" data-name="name" placeholder="Full name" value="${nameVal}" autocomplete="off" />
-        <input class="form-input" data-name="email" placeholder="Email" value="${emailVal}" autocomplete="off" />
-        <input class="form-input" data-name="class" placeholder="Class" value="${classVal}" autocomplete="off" />
-        <input class="form-input" data-name="phone" placeholder="Phone" value="${phoneVal}" autocomplete="off" />
-        <button class="btn btn--tertiary btn-inline-clear" type="button">Remove</button>
+        <input class="form-input" data-name="name" placeholder="Full name" value="${nameVal}" autocomplete="off" readonly />
+        <input class="form-input" data-name="email" placeholder="Email" value="${emailVal}" autocomplete="off" readonly />
+        <input class="form-input" data-name="class" placeholder="Class" value="${classVal}" autocomplete="off" readonly />
+        <input class="form-input" data-name="phone" placeholder="Phone" value="${phoneVal}" autocomplete="off" readonly />
       `;
-      row.querySelector(".btn-inline-clear").addEventListener("click", (e) => {
-        e.stopPropagation();
-        const idx = rows.indexOf(row);
-        if (idx !== -1) rows.splice(idx, 1);
-        row.remove();
-        addBtn.disabled = rows.length >= capacity;
-      });
       return row;
     };
 
-    const addBtn = document.createElement("button");
-    addBtn.className = "btn btn--tertiary";
-    addBtn.type = "button";
-    addBtn.textContent = "Add participant";
-    addBtn.addEventListener("click", (e) => {
-      e.stopPropagation();
-      if (rows.length >= capacity) return;
-      const nr = createRow({});
-      rows.push(nr);
-      editor.insertBefore(nr, addContainer);
-      addBtn.disabled = rows.length >= capacity;
+    editor.addEventListener("focusin", (e) => {
+      const inp = e.target && e.target.closest ? e.target.closest("input[readonly]") : null;
+      if (inp) inp.removeAttribute("readonly");
     });
 
-    const initialCount = Math.max(1, Math.min(existingMembers.length || 1, capacity));
-    for (let i = 0; i < initialCount; i++) {
+    for (let i = 0; i < capacity; i++) {
       const r = createRow(existingMembers[i] || {});
       rows.push(r);
       editor.appendChild(r);
     }
-
-    const addContainer = document.createElement("div");
-    addContainer.style.marginTop = "8px";
-    addContainer.appendChild(addBtn);
-    editor.appendChild(addContainer);
-    addBtn.disabled = rows.length >= capacity;
 
     const actions = document.createElement("div");
     actions.style.marginTop = "12px";
     actions.style.display = "flex";
     actions.style.gap = "12px";
     actions.style.justifyContent = "flex-end";
-    const saveBtn = document.createElement("button");
-    saveBtn.className = "btn btn--primary";
-    saveBtn.textContent = isUpdate ? "Update" : "Save";
-    const cancelBtn = document.createElement("button");
-    cancelBtn.className = "btn btn--secondary";
-    cancelBtn.textContent = "Cancel";
-    actions.appendChild(saveBtn);
-    actions.appendChild(cancelBtn);
-    editor.appendChild(actions);
-
+    actions.style.alignItems = "center";
     if (isUpdate) {
       const deleteBtn = document.createElement("button");
-      deleteBtn.className = "btn btn--tertiary";
+      deleteBtn.type = "button";
       deleteBtn.textContent = "Delete registration";
-      deleteBtn.style.marginTop = "12px";
+      deleteBtn.style.marginRight = "auto";
+      deleteBtn.style.background = "none";
+      deleteBtn.style.border = "none";
+      deleteBtn.style.padding = "10px 4px";
+      deleteBtn.style.fontFamily = "inherit";
+      deleteBtn.style.fontSize = "14px";
+      deleteBtn.style.fontWeight = "600";
+      deleteBtn.style.color = "#d33f49";
+      deleteBtn.style.opacity = "0.75";
+      deleteBtn.style.cursor = "pointer";
       deleteBtn.addEventListener("click", async (e) => {
         e.stopPropagation();
         const confirmed = await Utils.showConfirmModal("Delete your registration for this event?", "Delete registration", "Delete", "Cancel");
@@ -283,8 +260,17 @@ class EventDetailPage {
           Utils.showToast((err && err.message) || "Delete failed", "error");
         }
       });
-      editor.appendChild(deleteBtn);
+      actions.appendChild(deleteBtn);
     }
+    const saveBtn = document.createElement("button");
+    saveBtn.className = "btn btn--primary";
+    saveBtn.textContent = isUpdate ? "Update" : "Save";
+    const cancelBtn = document.createElement("button");
+    cancelBtn.className = "btn btn--secondary";
+    cancelBtn.textContent = "Cancel";
+    actions.appendChild(cancelBtn);
+    actions.appendChild(saveBtn);
+    editor.appendChild(actions);
 
     modal.appendChild(editor);
     overlay.appendChild(modal);

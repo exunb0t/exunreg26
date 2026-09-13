@@ -7,7 +7,8 @@
     image: '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>',
     back: '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>',
     forward: '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>',
-    reload: '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>'
+    reload: '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>',
+    trash: '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>'
   };
 
   let menu = null;
@@ -85,28 +86,52 @@
   function openMenu(x, y, items) {
     const m = ensureMenu();
     m.innerHTML = "";
-    items.forEach((it) => {
+    const groups = [[], [], []];
+    let lastGroup = 0;
+    for (const it of items) {
       if (it.divider) {
-        const sep = document.createElement("div");
-        sep.className = "ctx-sep";
-        m.appendChild(sep);
-        return;
+        groups[lastGroup].push(it);
+        continue;
       }
-      const b = document.createElement("button");
-      b.type = "button";
-      b.className = "ctx-item" + (it.primary ? " primary" : "") + (it.danger ? " danger" : "") + (it.disabled ? " disabled" : "");
-      b.innerHTML = `${ICONS[it.icon] || ""}<span></span>`;
-      b.querySelector("span").textContent = it.label;
-      if (it.disabled) {
-        b.disabled = true;
-        b.title = "Login to use this";
-      } else {
-        b.addEventListener("click", () => {
-          closeMenu();
-          it.action();
-        });
-      }
-      m.appendChild(b);
+      lastGroup = it.danger ? 2 : it.warn ? 1 : 0;
+      groups[lastGroup].push(it);
+    }
+    const trim = (g) => {
+      while (g.length && g[0].divider) g.shift();
+      while (g.length && g[g.length - 1].divider) g.pop();
+      return g;
+    };
+    const safe = trim(groups[0]);
+    const modify = trim(trim(groups[1]).concat(trim(groups[2])));
+    const sections = [safe, modify].filter((g) => g.length > 0);
+    const addSep = () => {
+      const sep = document.createElement("div");
+      sep.className = "ctx-sep";
+      m.appendChild(sep);
+    };
+    sections.forEach((group, gi) => {
+      if (gi > 0) addSep();
+      group.forEach((it) => {
+        if (it.divider) {
+          addSep();
+          return;
+        }
+        const b = document.createElement("button");
+        b.type = "button";
+        b.className = "ctx-item" + (it.primary ? " primary" : "") + (it.danger ? " danger" : "") + (it.disabled ? " disabled" : "");
+        b.innerHTML = `${ICONS[it.icon] || ""}<span></span>`;
+        b.querySelector("span").textContent = it.label;
+        if (it.disabled) {
+          b.disabled = true;
+          b.title = "Login to use this";
+        } else {
+          b.addEventListener("click", () => {
+            closeMenu();
+            it.action();
+          });
+        }
+        m.appendChild(b);
+      });
     });
     m.style.visibility = "hidden";
     m.classList.add("open");
@@ -167,7 +192,7 @@
     const userMsg = t && t.closest ? t.closest(".exw-msg.user[data-mid]") : null;
     if (userMsg && chatApi && chatApi.editMessage) {
       const mid = userMsg.dataset.mid;
-      items.push({ icon: "sparkle", label: "Edit message", action: () => chatApi.editMessage(mid) });
+      items.push({ icon: "sparkle", label: "Edit message", warn: true, action: () => chatApi.editMessage(mid) });
       items.push({ divider: true });
     }
     const convoRow = t && t.closest ? t.closest(".exw-convo") : null;
@@ -180,7 +205,7 @@
         items.push({ icon: "external", label: "Open conversation", action: () => {
           if (convoRow.tagName === "BUTTON") convoRow.click();
         } });
-        if (cid) items.push({ icon: "reload", label: "Delete this chat", action: () => chatApi.deleteConversation && chatApi.deleteConversation(cid) });
+        if (cid) items.push({ icon: "trash", label: "Delete this chat", danger: true, action: () => chatApi.deleteConversation && chatApi.deleteConversation(cid) });
         items.push({ icon: "copy", label: "New chat", action: () => chatApi.newChat && chatApi.newChat() });
       }
       items.push({ divider: true });
@@ -195,11 +220,11 @@
         window.location.href = `/event/${Utils.slugify(ename.trim() || eid)}?id=${encodeURIComponent(eid)}`;
       } });
       if (window.summaryPage && window.summaryPage.toggleEditor) {
-        items.push({ icon: "sparkle", label: "Edit registration", action: () => window.summaryPage.toggleEditor(regCard, eid) });
+        items.push({ icon: "sparkle", label: "Edit registration", warn: true, action: () => window.summaryPage.toggleEditor(regCard, eid) });
       }
       items.push({ icon: "link", label: "Copy event link", action: () => copyText(`${window.location.origin}/event/${Utils.slugify(ename.trim() || eid)}?id=${encodeURIComponent(eid)}`) });
       items.push({
-        icon: "reload",
+        icon: "trash",
         label: "Delete registration",
         danger: true,
         action: async () => {

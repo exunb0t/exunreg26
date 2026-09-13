@@ -26,6 +26,21 @@ class AdminPage {
         }
         this.setupEventListeners();
         this.renderCurrentTab();
+        const deepTicket = (window.location.hash || '').match(/^#ticket-(\d+)$/);
+        if (deepTicket) {
+            this.switchTab('tickets');
+            const id = Number(deepTicket[1]);
+            const tryOpen = async (attempts) => {
+                const row = document.querySelector(`[data-ticket-id="${id}"]`);
+                if (row) {
+                    row.click();
+                    row.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                } else if (attempts > 0) {
+                    setTimeout(() => tryOpen(attempts - 1), 500);
+                }
+            };
+            tryOpen(10);
+        }
     }
 
     async loadData() {
@@ -340,7 +355,6 @@ class AdminPage {
                     </select>
                 </div>
                 <div id="tickets-table-container"><div class="loading-placeholder">Loading tickets...</div></div>
-                <div id="ticket-detail-container" style="margin-top:20px;"></div>
             </div>`;
         const load = async () => {
             const status = document.getElementById('ticket-filter').value;
@@ -349,11 +363,18 @@ class AdminPage {
                 const list = (resp && resp.data) || [];
                 document.getElementById('tickets-table-container').innerHTML = `
                     <table class="admin-table">
-                        <thead><tr><th>ID</th><th>Subject</th><th>Email</th><th>By</th><th>Status</th><th>Created</th></tr></thead>
-                        <tbody>${list.map((t) => `<tr data-ticket-id="${t.id}" style="cursor:pointer;"><td>${t.id}</td><td>${Utils.escapeHtml(t.subject || '')}</td><td>${Utils.escapeHtml(t.userEmail || '')}</td><td>${Utils.escapeHtml(t.createdBy || '')}</td><td>${Utils.escapeHtml(t.status || '')}</td><td>${Utils.escapeHtml(t.createdAt || '')}</td></tr>`).join('') || '<tr><td colspan="6">No tickets</td></tr>'}</tbody>
+                        <thead><tr><th>ID</th><th>Subject</th><th>Email</th><th>By</th><th>Category</th><th>Priority</th><th>Status</th><th>Created</th></tr></thead>
+                        <tbody>${list.map((t) => `<tr data-ticket-id="${t.id}" style="cursor:pointer;"><td>${t.id}</td><td>${Utils.escapeHtml(t.subject || '')}</td><td>${Utils.escapeHtml(t.userEmail || '')}</td><td>${Utils.escapeHtml(t.createdBy || '')}</td><td>${Utils.escapeHtml(t.category || '')}</td><td>${Utils.escapeHtml(t.priority || '')}</td><td>${Utils.escapeHtml(t.status || '')}</td><td>${Utils.escapeHtml(t.createdAt || '')}</td></tr>`).join('') || '<tr><td colspan="8">No tickets</td></tr>'}</tbody>
                     </table>`;
                 document.querySelectorAll('[data-ticket-id]').forEach((row) => {
-                    row.addEventListener('click', () => this.openTicketDetail(Number(row.dataset.ticketId)));
+                    row.addEventListener('click', () => {
+                        const next = row.nextElementSibling;
+                        if (next && next.classList.contains('ticket-detail-row')) {
+                            next.remove();
+                            return;
+                        }
+                        this.openTicketDetail(Number(row.dataset.ticketId), row);
+                    });
                 });
             } catch (err) {
                 Utils.showToast((err && err.message) || 'Failed to load tickets', 'error');
@@ -363,23 +384,32 @@ class AdminPage {
         await load();
     }
 
-    async openTicketDetail(id) {
-        const box = document.getElementById('ticket-detail-container');
-        if (!box) return;
+    async openTicketDetail(id, anchorRow) {
+        const table = anchorRow ? anchorRow.closest('table') : null;
+        const cols = anchorRow ? anchorRow.children.length : 8;
+        document.querySelectorAll('.ticket-detail-row').forEach((r) => r.remove());
+        if (!anchorRow) return;
+        const detailRow = document.createElement('tr');
+        detailRow.className = 'ticket-detail-row';
+        const cell = document.createElement('td');
+        cell.colSpan = cols;
+        cell.innerHTML = '<div class="loading-placeholder">Loading ticket...</div>';
+        detailRow.appendChild(cell);
+        anchorRow.after(detailRow);
         try {
             const resp = await window.ExunServices.admin.getTicket(id);
             const data = (resp && resp.data) || {};
             const t = data.ticket || {};
             const messages = data.messages || [];
-            box.innerHTML = `
+            cell.innerHTML = `
                 <div class="admin-card">
                     <h4>#${t.id} ${Utils.escapeHtml(t.subject || '')}</h4>
-                    <p><strong>From:</strong> ${Utils.escapeHtml(t.userEmail || '')} · <strong>Status:</strong> ${Utils.escapeHtml(t.status || '')}</p>
+                    <p><strong>From:</strong> ${Utils.escapeHtml(t.userEmail || '')} · <strong>Status:</strong> ${Utils.escapeHtml(t.status || '')}${t.category ? ` · <strong>Category:</strong> ${Utils.escapeHtml(t.category)}` : ''}${t.priority ? ` · <strong>Priority:</strong> ${Utils.escapeHtml(t.priority)}` : ''}</p>
                     <p>${Utils.escapeHtml(t.message || '')}</p>
-                    ${t.adminReply ? `<p><strong>Reply (${Utils.escapeHtml(t.repliedBy || '')}):</strong> ${Utils.escapeHtml(t.adminReply)}</p>` : ''}
-                    ${messages.length ? `<div style="margin:12px 0;">${messages.map((m) => `<div><strong>${Utils.escapeHtml(m.role)}:</strong> ${Utils.escapeHtml(m.content).slice(0, 500)}</div>`).join('')}</div>` : ''}
-                    <div style="display:flex;gap:8px;margin-top:12px;">
-                        <input id="ticket-reply-input" class="admin-form__input" placeholder="Write a reply..." style="flex:1;" />
+                    ${t.adminReply ? `<div class="md-body">${Utils.renderMarkdown(t.adminReply)}</div>` : ''}
+                    ${messages.length ? `<div style="margin:12px 0;display:flex;flex-direction:column;gap:8px;">${messages.map((m) => `<div>${m.role === 'admin' ? `<div class="md-body">${Utils.renderMarkdown(String(m.content || '').slice(0, 2000))}</div>` : `<div><strong>${Utils.escapeHtml(m.role)}:</strong> ${Utils.escapeHtml(String(m.content || '').slice(0, 500))}</div>`}</div>`).join('')}</div>` : ''}
+                    <div style="display:flex;gap:8px;margin-top:12px;align-items:flex-end;">
+                        <textarea id="ticket-reply-input" class="admin-form__textarea" placeholder="Write a reply... (Markdown supported)" rows="3" style="flex:1;resize:vertical;"></textarea>
                         <button class="btn btn--primary" id="ticket-reply-send">Reply</button>
                     </div>
                     <div style="display:flex;gap:8px;margin-top:8px;">
@@ -388,30 +418,34 @@ class AdminPage {
                         <button class="btn btn--secondary" data-ticket-status="closed">Close</button>
                     </div>
                 </div>`;
-            document.getElementById('ticket-reply-send').addEventListener('click', async () => {
-                const message = document.getElementById('ticket-reply-input').value.trim();
+            cell.querySelector('#ticket-reply-send').addEventListener('click', async () => {
+                const message = cell.querySelector('#ticket-reply-input').value.trim();
                 if (!message) return;
                 try {
                     await window.ExunServices.admin.replyTicket(id, message);
                     Utils.showToast('Reply sent', 'success');
-                    await this.renderTickets();
+                    await this.openTicketDetail(id, anchorRow);
                 } catch (err) {
                     Utils.showToast((err && err.message) || 'Reply failed', 'error');
                 }
             });
-            box.querySelectorAll('[data-ticket-status]').forEach((btn) => {
+            cell.querySelectorAll('[data-ticket-status]').forEach((btn) => {
                 btn.addEventListener('click', async () => {
                     try {
                         await window.ExunServices.admin.setTicketStatus(id, btn.dataset.ticketStatus);
                         Utils.showToast('Ticket updated', 'success');
                         await this.renderTickets();
+                        const row = document.querySelector(`[data-ticket-id="${id}"]`);
+                        if (row) await this.openTicketDetail(id, row);
                     } catch (err) {
                         Utils.showToast((err && err.message) || 'Update failed', 'error');
                     }
                 });
             });
+            detailRow.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
         } catch (err) {
             Utils.showToast((err && err.message) || 'Failed to load ticket', 'error');
+            detailRow.remove();
         }
     }
 
@@ -439,8 +473,8 @@ class AdminPage {
                 const list = (resp && resp.data) || [];
                 document.getElementById('kb-table-container').innerHTML = `
                     <table class="admin-table">
-                        <thead><tr><th>ID</th><th>URL</th><th>Title</th><th>Status</th><th>Chunks</th><th>Actions</th></tr></thead>
-                        <tbody>${list.map((s) => `<tr><td>${s.id}</td><td style="max-width:280px;overflow:hidden;text-overflow:ellipsis;">${Utils.escapeHtml(s.url || '')}</td><td>${Utils.escapeHtml(s.title || '')}</td><td>${Utils.escapeHtml(s.status || '')}</td><td>${s.chunkCount ?? 0}</td><td style="white-space:nowrap;"><button class="btn btn--secondary" data-kb-chunks="${s.id}">Chunks</button> <button class="btn btn--secondary" data-kb-sync="${s.id}">Sync</button> <button class="btn btn--secondary" data-kb-delete="${s.id}">Delete</button></td></tr>`).join('') || '<tr><td colspan="6">No sources</td></tr>'}</tbody>
+                        <thead><tr><th>ID</th><th>URL</th><th>Title</th><th>Status</th><th>Chunks</th><th>On</th><th>Actions</th></tr></thead>
+                        <tbody>${list.map((s) => `<tr><td>${s.id}</td><td style="max-width:280px;overflow:hidden;text-overflow:ellipsis;">${Utils.escapeHtml(s.url || '')}</td><td>${Utils.escapeHtml(s.title || '')}</td><td>${Utils.escapeHtml(s.status || '')}</td><td>${s.chunkCount ?? 0}</td><td><button class="btn btn--secondary" data-kb-toggle="${s.id}">${s.enabled ? 'On' : 'Off'}</button></td><td style="white-space:nowrap;"><button class="btn btn--secondary" data-kb-chunks="${s.id}">Chunks</button> <button class="btn btn--secondary" data-kb-sync="${s.id}">Sync</button> <button class="btn btn--secondary" data-kb-delete="${s.id}">Delete</button></td></tr>`).join('') || '<tr><td colspan="7">No sources</td></tr>'}</tbody>
                     </table>`;
                 document.querySelectorAll('[data-kb-chunks]').forEach((btn) => {
                     btn.addEventListener('click', async () => {
@@ -458,9 +492,21 @@ class AdminPage {
                         try {
                             await window.ExunServices.admin.kbSync(Number(btn.dataset.kbSync));
                             Utils.showToast('Source synced', 'success');
-                            await load();
                         } catch (err) {
                             Utils.showToast((err && err.message) || 'Sync failed', 'error');
+                        } finally {
+                            await load();
+                        }
+                    });
+                });
+                document.querySelectorAll('[data-kb-toggle]').forEach((btn) => {
+                    btn.addEventListener('click', async () => {
+                        try {
+                            const r = await window.ExunServices.admin.kbToggleSource(btn.dataset.kbToggle);
+                            Utils.showToast((r && r.message) || 'Source toggled', 'success');
+                            await load();
+                        } catch (err) {
+                            Utils.showToast((err && err.message) || 'Toggle failed', 'error');
                         }
                     });
                 });
@@ -477,9 +523,19 @@ class AdminPage {
                         }
                     });
                 });
+                return list;
             } catch (err) {
                 Utils.showToast((err && err.message) || 'Failed to load sources', 'error');
+                return [];
             }
+        };
+        const pollKbUntilFresh = async (startedAt) => {
+            for (let i = 0; i < 30; i++) {
+                await new Promise((r) => setTimeout(r, 4000));
+                const list = await load();
+                if (list.length > 0 && list.every((s) => s.status === 'error' || (s.lastSyncedAt && s.lastSyncedAt >= startedAt))) break;
+            }
+            await load();
         };
         document.getElementById('kb-add-form').addEventListener('submit', async (e) => {
             e.preventDefault();
@@ -489,27 +545,35 @@ class AdminPage {
                 const resp = await window.ExunServices.admin.kbAddSource(url);
                 Utils.showToast('Source added', 'success');
                 document.getElementById('kb-url').value = '';
-                await load();
+                if (resp && resp.data && resp.data.failed && resp.data.failed.length > 0) {
+                    Utils.showToast(`Could not resolve as Google Doc: ${resp.data.failed.join(', ')}`, 'error');
+                }
             } catch (err) {
                 Utils.showToast((err && err.message) || 'Add failed', 'error');
+            } finally {
+                await load();
             }
         });
         document.getElementById('kb-sync-all').addEventListener('click', async () => {
+            const startedAt = new Date().toISOString();
             try {
                 await window.ExunServices.admin.kbSync();
-                Utils.showToast('Sync started', 'success');
-                await load();
+                Utils.showToast('Sync running in background', 'success');
             } catch (err) {
                 Utils.showToast((err && err.message) || 'Sync failed', 'error');
+            } finally {
+                await pollKbUntilFresh(startedAt);
             }
         });
         document.getElementById('kb-seed').addEventListener('click', async () => {
+            const startedAt = new Date().toISOString();
             try {
                 await window.ExunServices.admin.kbSeed();
-                Utils.showToast('Seed started', 'success');
-                await load();
+                Utils.showToast('Seed started, sync running in background', 'success');
             } catch (err) {
                 Utils.showToast((err && err.message) || 'Seed failed', 'error');
+            } finally {
+                await pollKbUntilFresh(startedAt);
             }
         });
         await load();
@@ -528,13 +592,22 @@ class AdminPage {
                     </form>
                 </div>
                 <div class="admin-card">
-                    <h3>Sync Google Sheet</h3>
+                    <h3>Export to Google Sheet</h3>
                     <form id="sheets-form" style="display:flex;flex-direction:column;gap:10px;" autocomplete="off">
-                        <input id="sheets-id" class="admin-form__input" placeholder="Spreadsheet ID" autocomplete="off" />
-                        <input id="sheets-range" class="admin-form__input" placeholder="Range (optional, e.g. A1:Z1000)" autocomplete="off" />
-                        <button class="btn btn--primary" type="submit" style="align-self:flex-start;">Sync</button>
+                        <input id="sheets-id" class="admin-form__input" placeholder="Spreadsheet ID (optional if SPREADSHEET_ID is set)" autocomplete="off" />
+                        <button class="btn btn--primary" type="submit" style="align-self:flex-start;">Export now</button>
                     </form>
                     <div id="sheets-result" style="margin-top:10px;"></div>
+                </div>
+                <div class="admin-card">
+                    <h3>Drive backup</h3>
+                    <div style="display:flex;flex-direction:column;gap:10px;">
+                        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+                            <a class="btn btn--secondary" href="/api/admin/oauth2/start">Connect Google Drive</a>
+                            <button class="btn btn--primary" id="backup-now-btn" type="button">Back up now</button>
+                        </div>
+                        <div id="backup-result"></div>
+                    </div>
                 </div>
             </div>`;
         document.getElementById('invite-form').addEventListener('submit', async (e) => {
@@ -554,15 +627,29 @@ class AdminPage {
         document.getElementById('sheets-form').addEventListener('submit', async (e) => {
             e.preventDefault();
             const spreadsheetId = document.getElementById('sheets-id').value.trim();
-            const range = document.getElementById('sheets-range').value.trim();
-            if (!spreadsheetId) return;
             try {
-                const resp = await window.ExunServices.admin.syncSheets(spreadsheetId, range || undefined);
+                const resp = await window.ExunServices.admin.exportSheets(spreadsheetId || undefined);
                 const data = (resp && resp.data) || {};
-                document.getElementById('sheets-result').textContent = `Imported: ${data.imported ?? 0}`;
-                Utils.showToast('Sheet synced', 'success');
+                document.getElementById('sheets-result').textContent = `Exported — users: ${data.users ?? 0}, registrations: ${data.registrations ?? 0}, individual: ${data.individual ?? 0}`;
+                Utils.showToast('Sheet updated', 'success');
             } catch (err) {
-                Utils.showToast((err && err.message) || 'Sync failed', 'error');
+                Utils.showToast((err && err.message) || 'Export failed', 'error');
+            }
+        });
+        document.getElementById('backup-now-btn').addEventListener('click', async () => {
+            const btn = document.getElementById('backup-now-btn');
+            Utils.setLoading(btn, true);
+            try {
+                const resp = await window.ExunServices.admin.backupNow();
+                const data = (resp && resp.data) || {};
+                document.getElementById('backup-result').textContent = data.uploaded
+                    ? `Uploaded (file ${data.fileId || ''})`
+                    : `Skipped: ${data.reason || 'unknown'}`;
+                Utils.showToast((resp && resp.message) || 'Backup done', data.uploaded ? 'success' : 'info');
+            } catch (err) {
+                Utils.showToast((err && err.message) || 'Backup failed', 'error');
+            } finally {
+                Utils.setLoading(btn, false);
             }
         });
     }

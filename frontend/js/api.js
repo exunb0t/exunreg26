@@ -231,6 +231,9 @@ window.ExunServices.admin = {
     kbDeleteSource: function (id) {
         return apiRequest(`/api/admin/kb/sources/${encodeURIComponent(id)}`, { method: 'DELETE' });
     },
+    kbToggleSource: function (id) {
+        return apiRequest(`/api/admin/kb/sources/${encodeURIComponent(id)}/toggle`, { method: 'POST', body: {} });
+    },
     kbChunks: function (id) {
         return apiRequest(`/api/admin/kb/sources/${encodeURIComponent(id)}/chunks`, { method: 'GET' });
     },
@@ -243,7 +246,10 @@ window.ExunServices.admin = {
     sendInvite: function (email, message) {
         return apiRequest('/api/admin/send-invite', { method: 'POST', body: { email, message } });
     },
-    syncSheets: function (spreadsheetId, range) {
-        return apiRequest('/api/admin/sync-sheets', { method: 'POST', body: range ? { spreadsheetId, range } : { spreadsheetId } });
+    exportSheets: function (spreadsheetId) {
+        return apiRequest('/api/admin/export-sheets', { method: 'POST', body: spreadsheetId ? { spreadsheetId } : {} });
+    },
+    backupNow: function () {
+        return apiRequest('/api/admin/backup-now', { method: 'POST', body: {} });
     }
 };

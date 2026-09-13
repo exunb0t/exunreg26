@@ -7,6 +7,7 @@ import { setupRoutes, notFoundHandler } from './routes/routes'
 import { getDb } from './db/client'
 import * as queries from './db/queries'
 import { syncAllKbSources } from './lib/kb'
+import { exportSheetsToConfigured, backupDatabaseToConfigured } from './lib/scheduledTasks'
 
 const app = new Hono<{ Bindings: Bindings }>()
 
@@ -51,5 +52,7 @@ export default {
         await queries.deleteExpiredSessions(db, nowIso)
         await queries.deleteExpiredOtps(db, nowIso)
         await syncAllKbSources(db, env)
+        await exportSheetsToConfigured(db, env).catch((err) => console.error('scheduled sheets export failed', err))
+        await backupDatabaseToConfigured(db, env).catch((err) => console.error('scheduled drive backup failed', err))
     },
 }

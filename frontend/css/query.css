@@ -268,6 +268,8 @@
 
 .tickets-section .faq-title {
   margin-bottom: 24px;
+  color: #111827;
+  font-size: clamp(24px, 3vw, 30px);
 }
 
 #tickets-container {
@@ -280,26 +282,42 @@
 }
 
 .ticket-card {
-  background: #f4f5f7;
-  border: 1px solid rgba(15, 23, 42, 0.06);
+  background: #fff;
+  border: 1.5px solid #e2e6ee;
   border-radius: 16px;
-  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.05);
-  padding: 22px 26px;
+  box-shadow: 0 4px 16px rgba(15, 23, 42, 0.05);
+  padding: 20px 24px;
 }
 
-.ticket-card__header {
+.ticket-card__top {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   justify-content: space-between;
   gap: 12px;
   margin-bottom: 10px;
 }
 
+.ticket-card__id {
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: #2977f5;
+  background: rgba(41, 119, 245, 0.1);
+  border-radius: 999px;
+  padding: 5px 14px;
+}
+
 .ticket-card__title {
-  margin: 0;
+  margin: 0 0 6px;
   font-size: 17px;
-  font-weight: 600;
-  color: #33373b;
+  font-weight: 700;
+  color: #111827;
+}
+
+.ticket-card__meta {
+  margin: 0 0 10px;
+  font-size: 13px;
+  color: #6b7280;
 }
 
 .ticket-status {
@@ -334,8 +352,9 @@
 
 .ticket-card__reply {
   margin-top: 14px;
-  padding-top: 14px;
-  border-top: 1px solid rgba(15, 23, 42, 0.1);
+  background: rgba(41, 119, 245, 0.06);
+  border-radius: 12px;
+  padding: 12px 16px;
 }
 
 .ticket-card__reply-label {
@@ -350,4 +369,71 @@
   color: #33373b;
   font-size: 15px;
   line-height: 1.7;
+}
+
+.ticket-cta-section {
+  padding: 10px 0 40px;
+  text-align: center;
+}
+
+.ticket-cta-section .container {
+  max-width: 860px;
+  display: flex;
+  justify-content: center;
+}
+
+.ticket-cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  background: #2977f5;
+  color: #fff;
+  border-radius: 999px;
+  padding: 14px 28px;
+  font-size: 16px;
+  font-weight: 600;
+  text-decoration: none;
+  box-shadow: 0 12px 28px rgba(41, 119, 245, 0.35);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.ticket-cta:hover,
+.ticket-cta:visited,
+.ticket-cta:active,
+.ticket-cta:focus-visible {
+  color: #fff;
+}
+
+.ticket-cta:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 16px 34px rgba(41, 119, 245, 0.4);
+}
+
+.md-body p {
+  margin: 0 0 8px;
+}
+
+.md-body p:last-child {
+  margin-bottom: 0;
+}
+
+.md-body ul,
+.md-body ol {
+  margin: 6px 0 8px;
+  padding-left: 20px;
+}
+
+.md-body li {
+  margin: 2px 0;
+}
+
+.md-body code {
+  background: rgba(15, 23, 42, 0.08);
+  border-radius: 6px;
+  padding: 1px 6px;
+  font-size: 13px;
+}
+
+.md-body a {
+  color: #1f66d6;
 }

@@ -5,8 +5,9 @@ import * as queries from '../db/queries'
 import { sql } from 'drizzle-orm'
 import { getEmailFromCookie } from '../middleware/auth'
 import { parseLimit } from '../lib/paging'
-import { retrieveContext, buildContextBlock } from '../lib/rag'
-import { getChatCompletion, type ChatMessage } from '../lib/llm'
+import { retrieveContext, buildContextBlock, buildRosterBlock } from '../lib/rag'
+import systemPromptTemplate from '../prompts/system-prompt.md' with { type: 'text' }
+import { getChatCompletion, streamChatCompletion, type ChatMessage } from '../lib/llm'
 import { openTicket } from '../lib/tickets'
 import { slugify } from '../lib/slug'
 import type { EventRow } from '../db/queries'
@@ -20,6 +21,7 @@ interface Suggestion {
     label: string
     message?: string
     navigate?: string
+    dest?: string
 }
 
 function findEvent(events: EventRow[], text: string): EventRow | undefined {
@@ -35,15 +37,15 @@ function findEvent(events: EventRow[], text: string): EventRow | undefined {
     return undefined
 }
 
-function destinationFor(text: string): { label: string; navigate: string } | undefined {
+function destinationFor(text: string): { label: string; navigate: string; dest: string } | undefined {
     const t = text.toLowerCase()
-    if (t.includes('event') && (t.includes('list') || t.includes('all') || t.includes('browse') || t.includes('page'))) return { label: 'Open events page', navigate: '/events' }
-    if (t.includes('summary') || t.includes('registration') && (t.includes('status') || t.includes('my') || t.includes('view'))) return { label: 'Open registration summary', navigate: '/summary' }
-    if (t.includes('profile') || t.includes('account') || t.includes('complete')) return { label: 'Open profile page', navigate: '/complete' }
-    if (t.includes('brochure') || t.includes('invite')) return { label: 'Open brochure', navigate: '/brochure' }
-    if (t.includes('ticket') || t.includes('support') || t.includes('query') || t.includes('queries') || t.includes('contact') || t.includes('human') || t.includes('help')) return { label: 'Open support page', navigate: '/query' }
-    if (t.includes('home') || t.includes('main') || t.includes('landing')) return { label: 'Open home page', navigate: '/' }
-    if (t.includes('login') || t.includes('sign in') || t.includes('log in')) return { label: 'Open login page', navigate: '/login' }
+    if (t.includes('event') && (t.includes('list') || t.includes('all') || t.includes('browse') || t.includes('page'))) return { label: 'Open events page', navigate: '/events', dest: 'events page' }
+    if (t.includes('summary') || t.includes('registration') && (t.includes('status') || t.includes('my') || t.includes('view'))) return { label: 'Open registration summary', navigate: '/summary', dest: 'registration summary' }
+    if (t.includes('profile') || t.includes('account') || t.includes('complete')) return { label: 'Open profile page', navigate: '/complete', dest: 'profile page' }
+    if (t.includes('brochure') || t.includes('invite')) return { label: 'Open brochure', navigate: '/brochure', dest: 'brochure' }
+    if (t.includes('ticket') || t.includes('support') || t.includes('query') || t.includes('queries') || t.includes('contact') || t.includes('human') || t.includes('help')) return { label: 'Create a support ticket', navigate: '/ticket', dest: 'support ticket page' }
+    if (t.includes('home') || t.includes('main') || t.includes('landing')) return { label: 'Open home page', navigate: '/', dest: 'home page' }
+    if (t.includes('login') || t.includes('sign in') || t.includes('log in')) return { label: 'Open login page', navigate: '/login', dest: 'login page' }
     return undefined
 }
 
@@ -54,9 +56,9 @@ function buildSuggestions(events: EventRow[], userMessage: string, reply: string
     if (ev) {
         const url = `/event/${slugify(ev.name)}?id=${encodeURIComponent(ev.id)}`
         if (navIntent) {
-            out.push({ label: `Open ${ev.name}`, navigate: url })
+            out.push({ label: `Open ${ev.name}`, navigate: url, dest: `${ev.name} page` })
         } else {
-            out.push({ label: `Take me to ${ev.name}`, navigate: url })
+            out.push({ label: `Take me to ${ev.name}`, navigate: url, dest: `${ev.name} page` })
         }
         out.push({ label: `How many participants in ${ev.name}?`, message: `How many participants are allowed in ${ev.name}?` })
         out.push(ev.independentRegistration
@@ -72,12 +74,12 @@ function buildSuggestions(events: EventRow[], userMessage: string, reply: string
         out.push(
             { label: 'What events can I register for?', message: 'What events can I register for?' },
             { label: 'How do I complete my profile?', message: 'How do I complete my profile?' },
-            { label: 'Take me to the events page', navigate: '/events' }
+            { label: 'Take me to the events page', navigate: '/events', dest: 'events page' }
         )
     } else {
         const fallback: Suggestion[] = [
             { label: 'What events can I register for?', message: 'What events can I register for?' },
-            { label: 'Take me to the events page', navigate: '/events' },
+            { label: 'Take me to the events page', navigate: '/events', dest: 'events page' },
         ]
         for (const f of fallback) {
             if (out.length >= 3) break
@@ -88,12 +90,9 @@ function buildSuggestions(events: EventRow[], userMessage: string, reply: string
 }
 
 function buildSystemPrompt(contextBlock: string): string {
-    return `You are the support assistant for the Exun 2026 registration platform. Answer questions using ONLY the context below, which comes from the official event documentation. Be concise and friendly.
-
-If the context does not contain enough information to answer confidently, say so honestly and end your reply on a new line with the exact text ${ESCALATE_MARKER}, so it can be forwarded to a human admin.
-
-Context:
-${contextBlock}`
+    return systemPromptTemplate
+        .replaceAll('{{ESCALATE_MARKER}}', ESCALATE_MARKER)
+        .replaceAll('{{CONTEXT}}', contextBlock)
 }
 
 export async function createConversation(c: AppContext) {
@@ -184,8 +183,12 @@ export async function sendMessage(c: AppContext) {
 
     const userMsg = await queries.createChatMessage(db, { conversationId: id, role: 'user', content: userMessage })
 
-    const { matches, lowConfidence } = await retrieveContext(c.env, userMessage)
-    const contextBlock = buildContextBlock(matches)
+    const kbSources = await queries.getAllKbSources(db, 1000)
+    const excludedSourceIds = kbSources.filter((s) => !s.enabled).map((s) => s.id)
+    const { matches } = await retrieveContext(c.env, userMessage, excludedSourceIds)
+    const events = await queries.getAllEvents(db, 1000).catch(() => [])
+    const rosterBlock = buildRosterBlock(events)
+    const contextBlock = [rosterBlock, matches.length > 0 ? buildContextBlock(matches) : ''].filter((b) => b.length > 0).join('\n\n---\n\n')
 
     const history = await queries.getRecentMessages(db, id, CONTEXT_MESSAGE_WINDOW)
     const chatMessages: ChatMessage[] = [
@@ -195,6 +198,10 @@ export async function sendMessage(c: AppContext) {
             .map((m) => ({ role: m.role as 'user' | 'assistant', content: m.content })),
     ]
 
+    if (c.req.query('stream') === '1') {
+        return streamReply(c, db, id, conversation.messageCount, userMsg.id, userMessage, chatMessages)
+    }
+
     let reply: string
     try {
         reply = await getChatCompletion(c.env, chatMessages)
@@ -202,7 +209,7 @@ export async function sendMessage(c: AppContext) {
         return jsonError(c, 'The chat assistant is temporarily unavailable. Please try again shortly.', 502)
     }
 
-    const shouldEscalate = lowConfidence || reply.includes(ESCALATE_MARKER)
+    const shouldEscalate = reply.includes(ESCALATE_MARKER)
     const cleanReply = reply.replace(ESCALATE_MARKER, '').trim()
 
     await queries.createChatMessage(db, { conversationId: id, role: 'assistant', content: cleanReply })
@@ -228,11 +235,72 @@ export async function sendMessage(c: AppContext) {
             reply: cleanReply,
             messageId: userMsg.id,
             suggestEscalation,
+            suggestions: buildSuggestions(events, userMessage, cleanReply),
             escalationSubject: `Chatbot escalation: ${userMessage.slice(0, 80)}`,
             conversationStatus: nextStatus,
         },
         'Message sent'
     )
+}
+
+async function streamReply(
+    c: AppContext,
+    db: ReturnType<typeof getDb>,
+    id: string,
+    messageCount: number,
+    userMsgId: number,
+    userMessage: string,
+    chatMessages: ChatMessage[]
+) {
+    const encoder = new TextEncoder()
+    const { readable, writable } = new TransformStream()
+    const writer = writable.getWriter()
+    const send = (obj: unknown) => writer.write(encoder.encode(`data: ${JSON.stringify(obj)}\n\n`))
+
+    const pump = (async () => {
+        try {
+            const reply = await streamChatCompletion(c.env, chatMessages, (t) => {
+                send({ t }).catch(() => null)
+            })
+            const shouldEscalate = reply.includes(ESCALATE_MARKER)
+            const cleanReply = reply.replace(ESCALATE_MARKER, '').trim()
+            await queries.createChatMessage(db, { conversationId: id, role: 'assistant', content: cleanReply })
+            const newMessageCount = messageCount + 2
+            const nextStatus = newMessageCount >= MAX_MESSAGES_PER_CONVERSATION ? 'full' : 'active'
+            await queries.updateConversation(db, id, {
+                messageCount: sql`message_count + 2`,
+                status: nextStatus,
+                ...(messageCount === 0 ? { title: userMessage.slice(0, 60) } : {}),
+            })
+            let suggestEscalation = false
+            if (shouldEscalate) {
+                const existingTicket = await queries.getOpenTicketByConversation(db, id)
+                suggestEscalation = !existingTicket
+            }
+            const events = await queries.getAllEvents(db, 1000).catch(() => [])
+            await send({
+                done: true,
+                reply: cleanReply,
+                messageId: userMsgId,
+                suggestEscalation,
+                suggestions: buildSuggestions(events, userMessage, cleanReply),
+                conversationStatus: nextStatus,
+            })
+        } catch (err: any) {
+            await send({ error: err?.message ?? 'The chat assistant is temporarily unavailable. Please try again shortly.' }).catch(() => null)
+        } finally {
+            await writer.close().catch(() => null)
+        }
+    })()
+
+    c.executionCtx.waitUntil(pump.catch(() => null))
+    return new Response(readable, {
+        headers: {
+            'Content-Type': 'text/event-stream',
+            'Cache-Control': 'no-cache',
+            Connection: 'keep-alive',
+        },
+    })
 }
 
 export async function escalateConversation(c: AppContext) {

@@ -11,10 +11,12 @@ import * as queryHandlers from '../handlers/query'
 import * as regHandlers from '../handlers/reg'
 import * as summaryHandlers from '../handlers/summary'
 import * as adminHandlers from '../handlers/admin'
+import * as exportHandlers from '../handlers/export'
 import * as backupHandlers from '../handlers/backup'
 import * as chatHandlers from '../handlers/chat'
 import * as adminTicketHandlers from '../handlers/adminTickets'
 import * as adminKbHandlers from '../handlers/adminKb'
+import * as ticketHandlers from '../handlers/tickets'
 
 export function serveAsset(c: AppContext, path: string) {
     const url = new URL(c.req.url)
@@ -60,6 +62,9 @@ export function setupRoutes() {
 
     app.post('/api/query', authRequired, queryHandlers.queryHandler)
     app.get('/api/tickets/mine', authRequired, queryHandlers.listMyTickets)
+    app.get('/api/tickets/next', authRequired, ticketHandlers.nextTicket)
+    app.post('/api/tickets', authRequired, ticketHandlers.createTicket)
+    app.get('/ticket', (c) => serveAsset(c, '/ticket.html'))
 
     app.post('/api/chat/conversations', authRequired, chatHandlers.createConversation)
     app.get('/api/chat/conversations', authRequired, chatHandlers.listConversations)
@@ -90,7 +95,8 @@ export function setupRoutes() {
     app.post('/api/admin/send-invite', adminRequired, adminHandlers.sendInvite)
     app.post('/api/admin/import_events', adminRequired, adminHandlers.importEvents)
 
-    app.post('/api/admin/sync-sheets', adminRequired, adminHandlers.syncSheets)
+    app.post('/api/admin/export-sheets', adminRequired, exportHandlers.exportSheets)
+    app.post('/api/admin/backup-now', adminRequired, exportHandlers.backupNow)
 
     app.get('/api/admin/tickets', adminRequired, adminTicketHandlers.listTickets)
     app.get('/api/admin/tickets/:id', adminRequired, adminTicketHandlers.getTicket)
@@ -101,6 +107,7 @@ export function setupRoutes() {
     app.post('/api/admin/kb/sources', adminRequired, adminKbHandlers.addSources)
     app.post('/api/admin/kb/sources/seed', adminRequired, adminKbHandlers.seedFromEnv)
     app.delete('/api/admin/kb/sources/:id', adminRequired, adminKbHandlers.deleteSource)
+    app.post('/api/admin/kb/sources/:id/toggle', adminRequired, adminKbHandlers.toggleSource)
     app.get('/api/admin/kb/sources/:id/chunks', adminRequired, adminKbHandlers.getSourceChunks)
     app.post('/api/admin/kb/sync', adminRequired, adminKbHandlers.syncSources)
 

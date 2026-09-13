@@ -1,8 +1,23 @@
 import { NodeHtmlMarkdown } from 'node-html-markdown'
 
 export function extractGoogleDocId(url: string): string | null {
-    const match = url.match(/\/document\/d\/([a-zA-Z0-9_-]+)/)
+    const pub = url.match(/\/document\/(?:u\/\d+\/)?d\/e\/([a-zA-Z0-9_-]+)/)
+    if (pub) return `pub:${pub[1]}`
+    const match = url.match(/\/document\/(?:u\/\d+\/)?d\/([a-zA-Z0-9_-]+)/)
     return match ? match[1] : null
+}
+
+export async function resolveGoogleDocId(url: string): Promise<string | null> {
+    const direct = extractGoogleDocId(url)
+    if (direct) return direct
+
+    try {
+        const res = await fetch(url, { redirect: 'follow' })
+        const finalUrl = res.url || url
+        return extractGoogleDocId(finalUrl)
+    } catch {
+        return null
+    }
 }
 
 export interface FetchedDoc {
@@ -11,7 +26,10 @@ export interface FetchedDoc {
 }
 
 export async function fetchGoogleDocHtml(docId: string): Promise<FetchedDoc> {
-    const res = await fetch(`https://docs.google.com/document/d/${docId}/export?format=html`)
+    const url = docId.startsWith('pub:')
+        ? `https://docs.google.com/document/d/e/${docId.slice(4)}/pub`
+        : `https://docs.google.com/document/d/${docId}/export?format=html`
+    const res = await fetch(url)
 
     if (!res.ok) {
         throw new Error(`Failed to fetch Google Doc (status ${res.status}). Make sure link sharing is set to "Anyone with the link can view".`)

@@ -2,7 +2,7 @@ import type { AppContext } from '../types'
 import { jsonOk, jsonError } from '../lib/response'
 import { getDb } from '../db/client'
 import * as queries from '../db/queries'
-import { extractGoogleDocId } from '../lib/googleDocs'
+import { resolveGoogleDocId } from '../lib/googleDocs'
 import { syncKbSource, syncAllKbSources, parseSeedUrls } from '../lib/kb'
 import { deleteChunkVectors } from '../lib/qdrant'
 import { parseLimit } from '../lib/paging'
@@ -28,10 +28,14 @@ export async function addSources(c: AppContext) {
     }
 
     const created = []
+    const failed: string[] = []
 
     for (const url of urls) {
-        const docId = extractGoogleDocId(url)
-        if (!docId) continue
+        const docId = await resolveGoogleDocId(url)
+        if (!docId) {
+            failed.push(url)
+            continue
+        }
 
         const existing = await queries.getKbSourceByUrl(db, url)
         if (existing) continue
@@ -50,7 +54,7 @@ export async function addSources(c: AppContext) {
         results.push(await syncKbSource(db, c.env, source))
     }
 
-    return jsonOk(c, { added: created.length, results }, 'Sources added and synced')
+    return jsonOk(c, { added: created.length, results, failed }, 'Sources added and synced')
 }
 
 export async function deleteSource(c: AppContext) {
@@ -84,8 +88,20 @@ export async function syncSources(c: AppContext) {
         return jsonOk(c, result, 'Source synced')
     }
 
-    const results = await syncAllKbSources(db, c.env)
-    return jsonOk(c, results, 'All sources synced')
+    c.executionCtx.waitUntil(syncAllKbSources(db, c.env))
+    return jsonOk(c, { started: true }, 'Sync started in background')
+}
+
+export async function toggleSource(c: AppContext) {
+    const db = getDb(c.env)
+    const id = Number(c.req.param('id'))
+    if (!Number.isInteger(id)) return jsonError(c, 'Valid source ID required', 400)
+
+    const source = await queries.getKbSourceById(db, id)
+    if (!source) return jsonError(c, 'Source not found', 404)
+
+    const updated = await queries.updateKbSource(db, id, { enabled: source.enabled ? 0 : 1 })
+    return jsonOk(c, updated, updated?.enabled ? 'Source enabled' : 'Source disabled')
 }
 
 export async function getSourceChunks(c: AppContext) {
@@ -106,10 +122,14 @@ export async function seedFromEnv(c: AppContext) {
     const urls = parseSeedUrls(c.env.GOOGLE_DOC_URLS)
 
     const created = []
+    const failed: string[] = []
 
     for (const url of urls) {
-        const docId = extractGoogleDocId(url)
-        if (!docId) continue
+        const docId = await resolveGoogleDocId(url)
+        if (!docId) {
+            failed.push(url)
+            continue
+        }
 
         const existing = await queries.getKbSourceByUrl(db, url)
         if (existing) continue
@@ -125,8 +145,9 @@ export async function seedFromEnv(c: AppContext) {
 
     const results = []
     for (const source of created) {
-        results.push(await syncKbSource(db, c.env, source))
+        results.push(syncKbSource(db, c.env, source))
     }
 
-    return jsonOk(c, { added: created.length, results }, 'Seeded from GOOGLE_DOC_URLS')
+    c.executionCtx.waitUntil(Promise.all(results))
+    return jsonOk(c, { added: created.length, failed, started: true }, 'Seeded from GOOGLE_DOC_URLS, sync running in background')
 }

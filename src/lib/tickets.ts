@@ -4,6 +4,10 @@ import * as queries from '../db/queries'
 import type { TicketRow } from '../db/queries'
 import { sendEmail } from './sendemail'
 
+export function ticketDisplayId(id: number): string {
+    return `#Ex-${1000 + id}`
+}
+
 export async function openTicket(
     db: Db,
     env: Bindings,

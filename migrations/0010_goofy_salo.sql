@@ -1,0 +1,1 @@
+ALTER TABLE `kb_sources` ADD `enabled` integer DEFAULT 1 NOT NULL;

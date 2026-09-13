@@ -21,6 +21,11 @@ export interface Bindings {
     GOOGLE_CLIENT_ID: string
     GOOGLE_CLIENT_SECRET: string
 
+    SPREADSHEET_ID?: string
+    DRIVE_FOLDER_ID?: string
+    GOOGLE_SERVICE_ACCOUNT_JSON?: string
+    PUBLIC_URL?: string
+
     // ChatBot Api Key
 
     OPENROUTER_API_KEY: string;

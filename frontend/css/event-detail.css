@@ -235,13 +235,6 @@
   }
 }
 
-@font-face {
-  font-family: "Outfit";
-  src: url("/fonts/outfit.ttf") format("truetype");
-  font-weight: 100 900;
-  font-style: normal;
-}
-
 .inline-registration-editor {
   font-family:
     "Outfit",
@@ -322,11 +315,13 @@
 .modal-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.45);
+  background: rgba(244, 245, 247, 0.55);
+  -webkit-backdrop-filter: blur(14px) saturate(1.25);
+  backdrop-filter: blur(14px) saturate(1.25);
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 9999;
+  z-index: 20000;
 }
 
 .modal-box {
@@ -361,7 +356,7 @@
 
 @media (max-width: 720px) {
   .inline-member-row {
-    grid-template-columns: 1fr 1fr 80px 110px auto !important;
+    grid-template-columns: 1fr 1fr 90px 130px !important;
   }
   .inline-registration-editor .form-input {
     font-size: 14px;

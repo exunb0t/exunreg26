@@ -4,6 +4,75 @@
   let booted = false;
   let booting = false;
 
+  const UI_KEY = "exw-ui";
+
+  function saveUi() {
+    try {
+      sessionStorage.setItem(UI_KEY, JSON.stringify({
+        open: state.open,
+        minimized: !!(els.popup && els.popup.classList.contains("minimized")),
+        zoomed: !!(els.popup && els.popup.classList.contains("zoomed")),
+        activeId: state.activeId,
+        thread: !!(els.popup && els.popup.classList.contains("show-thread")),
+        draft: els.input ? els.input.value : ""
+      }));
+    } catch (e) {}
+  }
+
+  function readUi() {
+    try {
+      const raw = sessionStorage.getItem(UI_KEY);
+      if (!raw) return null;
+      const s = JSON.parse(raw);
+      return s && typeof s === "object" ? s : null;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  async function restoreUi() {
+    const saved = readUi();
+    if (!saved || !saved.open || !els.popup || !els.toggle) return;
+    const root = document.getElementById("exw-root");
+    if (root && root.style.display === "none") return;
+    state.open = true;
+    els.popup.hidden = false;
+    els.toggle.setAttribute("aria-expanded", "true");
+    els.toggle.hidden = true;
+    try {
+      const session = await window.ExunServices.api.getSession();
+      state.authed = !!(session && session.authenticated);
+      state.email = (session && session.email) || "";
+    } catch (e) {
+      state.authed = false;
+    }
+    if (!state.authed) {
+      els.popup.classList.add("logged-out");
+      return;
+    }
+    els.popup.classList.remove("logged-out");
+    await loadConvos();
+    const id = saved.activeId;
+    if (id && !String(id).startsWith("draft-") && state.convos.some((c) => c.id === id)) {
+      await selectConvo(id);
+      let redirected = null;
+      try {
+        redirected = sessionStorage.getItem("exw-redirect");
+        sessionStorage.removeItem("exw-redirect");
+      } catch (e) {}
+      if (redirected) addMsg("system", `Redirected to ${redirected}.`);
+      if (els.input && typeof saved.draft === "string" && saved.draft) {
+        els.input.value = saved.draft;
+        els.send.disabled = !saved.draft.trim();
+      }
+    } else {
+      els.popup.classList.remove("show-thread");
+    }
+    els.popup.classList.toggle("minimized", !!saved.minimized);
+    els.popup.classList.toggle("zoomed", !!saved.zoomed);
+    saveUi();
+  }
+
   function hueFor(s) {
     let h = 0;
     const str = String(s || "?");
@@ -22,7 +91,9 @@
 
   function relTime(iso) {
     try {
-      const d = new Date(iso).getTime();
+      const norm = String(iso || "").trim().replace(" ", "T");
+      const stamped = norm.endsWith("Z") || /[+-]\d{2}:?\d{2}$/.test(norm) ? norm : norm + "Z";
+      const d = new Date(stamped).getTime();
       if (Number.isNaN(d)) return "";
       const mins = Math.max(0, Math.round((Date.now() - d) / 60000));
       if (mins < 1) return "now";
@@ -39,13 +110,62 @@
     if (els.msgs) els.msgs.scrollTop = els.msgs.scrollHeight;
   }
 
+  function renderMarkdown(src) {
+    const inline = (t) => {
+      let h = Utils.escapeHtml(t);
+      h = h.replace(/`([^`\n]+)`/g, "<code>$1</code>");
+      h = h.replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>");
+      h = h.replace(/(^|[^*\w])\*([^*\n]+)\*/g, "$1<em>$2</em>");
+      h = h.replace(/\[([^\]]+)\]\((https?:\/\/[^)\s]+)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>');
+      return h;
+    };
+    const lines = String(src == null ? "" : src).split("\n");
+    const parts = [];
+    let para = [];
+    let list = null;
+    const flushPara = () => {
+      if (para.length) parts.push(`<p>${para.map(inline).join("<br>")}</p>`);
+      para = [];
+    };
+    const flushList = () => {
+      if (list) parts.push(`<${list.tag}>${list.items.map((i) => `<li>${inline(i)}</li>`).join("")}</${list.tag}>`);
+      list = null;
+    };
+    for (const line of lines) {
+      const ulm = line.match(/^\s*[-*]\s+(.*)$/);
+      const olm = line.match(/^\s*\d+[.)]\s+(.*)$/);
+      if (ulm || olm) {
+        flushPara();
+        const tag = ulm ? "ul" : "ol";
+        if (!list || list.tag !== tag) {
+          flushList();
+          list = { tag, items: [] };
+        }
+        list.items.push((ulm || olm)[1]);
+      } else if (line.trim() === "") {
+        flushPara();
+        flushList();
+      } else {
+        flushList();
+        const hm = line.match(/^\s*#{1,3}\s+(.*)$/);
+        if (hm) flushPara();
+        para.push(hm ? `**${hm[1]}**` : line);
+      }
+    }
+    flushPara();
+    flushList();
+    return parts.join("");
+  }
+
   function addMsg(role, text) {
     if (!els.msgs) return null;
     const row = document.createElement("div");
-    row.className = "exw-msg " + (role === "user" ? "user" : role === "system" ? "system" : "bot");
+    const cls = role === "user" ? "user" : role === "system" ? "system" : "bot";
+    row.className = "exw-msg " + cls;
     const b = document.createElement("div");
     b.className = "bubble";
-    b.textContent = text;
+    if (cls === "bot") b.innerHTML = renderMarkdown(text);
+    else b.textContent = text;
     row.appendChild(b);
     els.msgs.appendChild(row);
     scrollMsgs();
@@ -72,7 +192,8 @@
     }
     const b = document.createElement("div");
     b.className = "bubble";
-    b.textContent = m.content;
+    if (role === "bot") b.innerHTML = renderMarkdown(m.content);
+    else b.textContent = m.content;
     row.appendChild(b);
     if (role === "user" && m.id != null && messageVersions(m).length > 1) {
       row.appendChild(versionFooter(m, b));
@@ -271,6 +392,7 @@
       addMsg("system", "Could not load this conversation.");
     }
     scrollMsgs();
+    saveUi();
   }
 
   async function newChat() {
@@ -305,6 +427,10 @@
       b.textContent = s.label;
       b.addEventListener("click", () => {
         if (s.navigate) {
+          try {
+            sessionStorage.setItem("exw-redirect", s.dest || s.label);
+          } catch (e) {}
+          saveUi();
           window.location.href = s.navigate;
           return;
         }
@@ -364,6 +490,7 @@
         state.activeId = convo.id;
         renderList();
         renderToggleAvatars();
+        saveUi();
       } catch (e) {
         Utils.showToast("Could not start a conversation", "error");
         return;
@@ -371,29 +498,103 @@
     }
     if (!state.activeId || state.sending) return;
     state.sending = true;
+    if (els.send) els.send.disabled = true;
     const urow = addMsg("user", text);
     const thinking = addMsg("bot", "Thinking...");
     if (thinking) thinking.classList.add("thinking");
+    let replyRow = null;
+    let replyText = "";
+    let gotToken = false;
+    let gotDone = false;
+    let rafQueued = false;
+    const paint = () => {
+      rafQueued = false;
+      if (replyRow) {
+        const b = replyRow.querySelector(".bubble");
+        if (b) b.innerHTML = renderMarkdown(replyText);
+      }
+      scrollMsgs();
+    };
+    const queuePaint = () => {
+      if (!rafQueued) {
+        rafQueued = true;
+        requestAnimationFrame(paint);
+      }
+    };
     try {
-      const resp = await window.ExunServices.chat.sendMessage(state.activeId, text);
-      if (thinking) thinking.remove();
-      const data = (resp && resp.data) || {};
-      if (urow && data.messageId != null) {
-        urow.dataset.mid = String(data.messageId);
-        state.msgById[data.messageId] = { id: data.messageId, role: "user", content: text, edits: "[]" };
-        state.verIdx[data.messageId] = 0;
+      const resp = await fetch(`/api/chat/conversations/${encodeURIComponent(state.activeId)}/messages?stream=1`, {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ message: text })
+      });
+      if (!resp.ok || !resp.body) {
+        let msg = `HTTP error! status: ${resp.status}`;
+        try {
+          const ct = resp.headers.get("content-type") || "";
+          if (ct.includes("application/json")) {
+            const j = await resp.json().catch(() => null);
+            msg = (j && (j.error || j.message)) || msg;
+          }
+        } catch (e) {}
+        throw new Error(msg);
       }
-      addMsg("bot", data.reply || "No answer returned.");
-      if (data.suggestEscalation) {
-        addApprovalCard();
+      const reader = resp.body.getReader();
+      const decoder = new TextDecoder();
+      let buf = "";
+      for (;;) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buf += decoder.decode(value, { stream: true });
+        let idx;
+        while ((idx = buf.indexOf("\n\n")) !== -1) {
+          const raw = buf.slice(0, idx);
+          buf = buf.slice(idx + 2);
+          const line = raw.split("\n").find((l) => l.startsWith("data:"));
+          if (!line) continue;
+          let evt = null;
+          try {
+            evt = JSON.parse(line.slice(5).trim());
+          } catch (e) {
+            continue;
+          }
+          if (evt && typeof evt.t === "string" && evt.t) {
+            if (!gotToken) {
+              gotToken = true;
+              if (thinking) thinking.remove();
+              replyRow = addMsg("bot", "");
+            }
+            replyText += evt.t;
+            queuePaint();
+          } else if (evt && evt.done) {
+            gotDone = true;
+            replyText = typeof evt.reply === "string" ? evt.reply : replyText;
+            if (!replyRow) {
+              if (thinking) thinking.remove();
+              replyRow = addMsg("bot", "");
+            }
+            paint();
+            if (urow && evt.messageId != null) {
+              urow.dataset.mid = String(evt.messageId);
+              state.msgById[evt.messageId] = { id: evt.messageId, role: "user", content: text, edits: "[]" };
+              state.verIdx[evt.messageId] = 0;
+            }
+            if (evt.suggestEscalation) addApprovalCard();
+            renderSuggestions(evt.suggestions);
+            loadConvos();
+          } else if (evt && evt.error) {
+            throw new Error(evt.error);
+          }
+        }
       }
-      renderSuggestions(data.suggestions);
-      loadConvos();
+      paint();
+      if (!gotToken && !gotDone) throw new Error("Error contacting server.");
     } catch (e) {
-      if (thinking) thinking.remove();
-      addMsg("system", (e && e.message) || "Error contacting server.");
+      if (thinking && thinking.isConnected) thinking.remove();
+      if (!gotToken) addMsg("system", (e && e.message) || "Error contacting server.");
     } finally {
       state.sending = false;
+      if (els.send) els.send.disabled = !els.input.value.trim();
     }
   }
 
@@ -409,6 +610,7 @@
       }
       renderList();
       renderToggleAvatars();
+      saveUi();
       return;
     }
     const confirmed = await Utils.showConfirmModal("Delete this conversation and all its messages?", "Delete conversation", "Delete", "Cancel");
@@ -426,6 +628,7 @@
     } catch (e) {
       Utils.showToast((e && e.message) || "Delete failed", "error");
     }
+    saveUi();
   }
 
   async function deleteActiveConversation() {
@@ -467,10 +670,12 @@
     } else if (els.popup) {
       els.popup.classList.remove("show-thread");
     }
+    saveUi();
   }
 
   function closeWidget() {
     state.open = false;
+    saveUi();
     if (els.popup) els.popup.hidden = true;
     if (els.toggle) {
       els.toggle.setAttribute("aria-expanded", "false");
@@ -517,6 +722,7 @@
       if (els.input) els.input.focus();
       await sendMessage(t);
     }
+    saveUi();
   }
 
   window.ExunChat = {
@@ -539,12 +745,14 @@
     if (els.lClose) els.lClose.addEventListener("click", closeWidget);
     const toggleMin = () => {
       if (els.popup) els.popup.classList.toggle("minimized");
+      saveUi();
     };
     const toggleMax = () => {
       if (els.popup) {
         els.popup.classList.remove("minimized");
         els.popup.classList.toggle("zoomed");
       }
+      saveUi();
     };
     if (els.minBtn) els.minBtn.addEventListener("click", toggleMin);
     if (els.lMin) els.lMin.addEventListener("click", toggleMin);
@@ -554,14 +762,15 @@
       state.activeId = null;
       renderList();
       els.popup.classList.remove("show-thread");
+      saveUi();
     });
     if (els.newBtn) els.newBtn.addEventListener("click", newChat);
-    if (els.escalate) els.escalate.addEventListener("click", escalate);
-    if (els.deleteBtn) els.deleteBtn.addEventListener("click", deleteActiveConversation);
+    if (els.xBtn) els.xBtn.addEventListener("click", closeWidget);
     if (els.loginBtn) els.loginBtn.addEventListener("click", () => (window.location.href = "/login"));
     if (els.input && els.send) {
       els.input.addEventListener("input", () => {
         els.send.disabled = !els.input.value.trim() || state.sending;
+        saveUi();
       });
       if (els.form) {
         els.form.addEventListener("submit", (e) => {
@@ -570,13 +779,15 @@
           if (!text) return;
           els.input.value = "";
           els.send.disabled = true;
+          saveUi();
           sendMessage(text);
         });
       }
     }
-    document.addEventListener("keydown", (e) => {
-      if (e.key === "Escape" && state.open) closeWidget();
-    });
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape" && state.open) closeWidget();
+  });
+  window.addEventListener("beforeunload", () => saveUi());
   }
 
   function cacheEls() {
@@ -592,8 +803,7 @@
     els.lMin = document.getElementById("exw-l-min");
     els.lMax = document.getElementById("exw-l-max");
     els.back = document.getElementById("exw-back");
-    els.escalate = document.getElementById("exw-escalate");
-    els.deleteBtn = document.getElementById("exw-delete");
+    els.xBtn = document.getElementById("exw-x");
     els.form = document.getElementById("exw-form");
     els.input = document.getElementById("exw-input");
     els.send = document.getElementById("exw-send");
@@ -638,7 +848,8 @@
       cacheEls();
       wire();
       booted = true;
-      prepareAvatars();
+      await prepareAvatars();
+      await restoreUi();
     } catch (e) {
       booting = false;
     }

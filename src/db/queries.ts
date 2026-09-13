@@ -515,6 +515,11 @@ export async function createTicket(db: Db, data: TicketInsert): Promise<TicketRo
     return rows[0]
 }
 
+export async function getMaxTicketId(db: Db): Promise<number> {
+    const rows = await db.select({ m: sql<number | null>`MAX(${tickets.id})` }).from(tickets)
+    return rows[0]?.m ?? 0
+}
+
 export async function getTicketById(db: Db, id: number): Promise<TicketRow | undefined> {
     const rows = await db.select().from(tickets).where(eq(tickets.id, id)).limit(1)
     return rows[0]

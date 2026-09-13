@@ -212,6 +212,8 @@ export const kbSources = sqliteTable('kb_sources', {
 
     status: text('status').notNull().default('pending'),
 
+    enabled: integer('enabled').notNull().default(1),
+
     errorMessage: text('error_message'),
 
     lastSyncedAt: text('last_synced_at'),
@@ -253,6 +255,12 @@ export const tickets = sqliteTable('tickets', {
     createdBy: text('created_by').notNull(),
 
     status: text('status').notNull().default('open'),
+
+    category: text('category'),
+
+    priority: text('priority').notNull().default('medium'),
+
+    attachments: text('attachments').notNull().default('[]'),
 
     adminReply: text('admin_reply'),
 

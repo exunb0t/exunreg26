@@ -412,6 +412,53 @@
 
 .exw-msg.thinking .bubble {
   color: #6b7280;
+  background-image: linear-gradient(100deg, transparent 20%, rgba(255, 255, 255, 0.65) 50%, transparent 80%);
+  background-size: 200% 100%;
+  animation: exw-gleam 1.6s ease-in-out infinite;
+}
+
+@keyframes exw-gleam {
+  0% {
+    background-position: 120% 0;
+  }
+  100% {
+    background-position: -120% 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .exw-msg.thinking .bubble {
+    animation: none;
+  }
+}
+
+.exw-msg .bubble p {
+  margin: 0 0 8px;
+}
+
+.exw-msg .bubble p:last-child {
+  margin-bottom: 0;
+}
+
+.exw-msg .bubble ul,
+.exw-msg .bubble ol {
+  margin: 6px 0 8px;
+  padding-left: 20px;
+}
+
+.exw-msg .bubble li {
+  margin: 2px 0;
+}
+
+.exw-msg.bot .bubble code {
+  background: rgba(15, 23, 42, 0.08);
+  border-radius: 6px;
+  padding: 1px 6px;
+  font-size: 13px;
+}
+
+.exw-msg.bot .bubble a {
+  color: #1f66d6;
 }
 
 .exw-suggest {

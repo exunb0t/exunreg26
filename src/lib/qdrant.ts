@@ -82,7 +82,7 @@ export async function deleteChunkVectors(env: Bindings, ids: string[]): Promise<
     }
 }
 
-export async function queryKnowledgeBase(env: Bindings, queryVector: number[], topK: number): Promise<KbMatch[]> {
+export async function queryKnowledgeBase(env: Bindings, queryVector: number[], topK: number, excludeSourceIds: number[] = []): Promise<KbMatch[]> {
     const res = await fetch(collectionUrl(env, '/points/search'), {
         method: 'POST',
         headers: qdrantHeaders(env),
@@ -90,6 +90,9 @@ export async function queryKnowledgeBase(env: Bindings, queryVector: number[], t
             vector: queryVector,
             limit: topK,
             with_payload: true,
+            ...(excludeSourceIds.length > 0
+                ? { filter: { must_not: [{ key: 'sourceId', match: { any: excludeSourceIds } }] } }
+                : {}),
         }),
     })
 
