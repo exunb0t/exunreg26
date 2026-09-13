@@ -45,8 +45,6 @@ function pickEventFields(payload: unknown): { ok: true; data: EventInsert } | { 
     return { ok: true, data: data as EventInsert }
 }
 
-
-// GET /api/admin/stats
 export async function getAdminStats(c: AppContext) {
 
     const db = getDb(c.env)
@@ -68,10 +66,6 @@ export async function getAdminStats(c: AppContext) {
     )
 }
 
-
-
-// Get Admin Config
-
 export async function getAdminConfig(c: AppContext) {
 
     return jsonOk(
@@ -82,10 +76,6 @@ export async function getAdminConfig(c: AppContext) {
         'Admin Emails'
     )
 }
-
-
-
-//POST /api/admin/events
 
 export async function createEvent(c: AppContext) {
 
@@ -134,10 +124,6 @@ export async function createEvent(c: AppContext) {
     )
 }
 
-
-
-// GET /api/admin/events/:id
-
 export async function getAdminEvent(c: AppContext) {
 
     const db = getDb(c.env)
@@ -174,10 +160,6 @@ export async function getAdminEvent(c: AppContext) {
         'Event found'
     )
 }
-
-
-
-// PUT /api/admin/events/:id
 
 export async function updateEvent(c: AppContext) {
 
@@ -239,10 +221,6 @@ export async function updateEvent(c: AppContext) {
         'Event updated'
     )
 }
-
-
-
-//DELETE /api/admin/events/:id
 
 export async function deleteEvent(c: AppContext) {
 
@@ -366,10 +344,6 @@ export async function getEventRegistrations(c: AppContext) {
     )
 }
 
-
-
-// Export all data
-
 export async function exportData(c: AppContext) {
 
     const db = getDb(c.env)
@@ -399,10 +373,6 @@ export async function exportData(c: AppContext) {
         'Export data'
     )
 }
-
-
-
-// Send Invite
 
 export async function sendInvite(c: AppContext) {
 
@@ -444,10 +414,6 @@ export async function sendInvite(c: AppContext) {
         'Invite sent successfully!'
     )
 }
-
-
-
-// Import events
 
 export async function importEvents(c: AppContext) {
 
@@ -528,8 +494,3 @@ export async function importEvents(c: AppContext) {
         'Events imported'
     )
 }
-
-
-
-// Sync Google Sheets
-

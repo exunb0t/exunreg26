@@ -56,10 +56,8 @@ export function rateLimiter(options: { windowMs: number; maxRequests: number; bi
     }
 }
 
-// 100 reqs per min
 export const apiRateLimiter = rateLimiter({ windowMs: 60 * 1000, maxRequests: 100, bindingName: 'API_RATE_LIMITER' })
 
-// 10 reqs per min for auth
 export const authRateLimiter = rateLimiter({ windowMs: 60 * 1000, maxRequests: 10, bindingName: 'AUTH_RATE_LIMITER' })
 
 export const chatRateLimiter = rateLimiter({ windowMs: 60 * 1000, maxRequests: 20, bindingName: 'CHAT_RATE_LIMITER' })

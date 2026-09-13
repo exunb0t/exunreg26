@@ -32,7 +32,6 @@ function evictIfNeeded(now: number) {
 
 export function cacheMiddleware(ttlSeconds: number = 60): MiddlewareHandler<{ Bindings: Bindings }> {
     return async (c, next) => {
-        // we only caching get requests
         if (c.req.method !== 'GET') {
             await next()
             return

@@ -26,8 +26,6 @@ export interface Bindings {
     GOOGLE_SERVICE_ACCOUNT_JSON?: string
     PUBLIC_URL?: string
 
-    // ChatBot Api Key
-
     OPENROUTER_API_KEY: string;
     GROQ_API_KEY: string;
 
@@ -42,7 +40,6 @@ export interface Bindings {
 
     ALLOWED_ORIGINS?: string
 
-    // rate limiter
     API_RATE_LIMITER?: RateLimitBinding
     AUTH_RATE_LIMITER?: RateLimitBinding
     CHAT_RATE_LIMITER?: RateLimitBinding

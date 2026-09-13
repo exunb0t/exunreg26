@@ -20,7 +20,6 @@ export type OAuthTokenInsert = typeof oauthTokens.$inferInsert
 export type AuthSessionRow = typeof authSessions.$inferSelect
 export type AuthSessionInsert = typeof authSessions.$inferInsert
 
-// Password reset OTPs
 export type PasswordResetOtpRow = typeof passwordResetOtps.$inferSelect
 export type PasswordResetOtpInsert = typeof passwordResetOtps.$inferInsert
 
@@ -37,12 +36,6 @@ export function stringifyRegistrations(regs: Record<string, Participant[]> | und
     if (!regs) return '{}'
     return JSON.stringify(regs)
 }
-
-// ---- usrs ---
-/*
-export async function checkIfUserExists(db: Db, email: string) : Promise<boolean> {
-    const 
-}*/
 
 export async function getUserByEmail(db: Db, email: string): Promise<UserRow | undefined> {
     const rows = await db.select().from(users).where(eq(users.email, email)).limit(1)
@@ -82,8 +75,6 @@ export async function deleteUserByEmail(db: Db, email: string): Promise<void> {
     await db.delete(users).where(eq(users.email, email))
 }
 
-// ---- events ----
-//
 export async function getEventById(db: Db, id: string): Promise<EventRow | undefined> {
     const rows = await db.select().from(events).where(eq(events.id, id)).limit(1)
     return rows[0]
@@ -110,8 +101,6 @@ export async function updateEvent(db: Db, id: string, data: Partial<EventInsert>
 export async function deleteEvent(db: Db, id: string): Promise<void> {
     await db.delete(events).where(eq(events.id, id))
 }
-
-// ---- registrations ----
 
 export async function getRegistrationById(db: Db, id: number): Promise<RegistrationRow | undefined> {
     const rows = await db.select().from(registrations).where(eq(registrations.id, id)).limit(1)
@@ -151,8 +140,6 @@ export async function updateRegistration(
 export async function deleteRegistration(db: Db, id: number): Promise<void> {
     await db.delete(registrations).where(eq(registrations.id, id))
 }
-
-// ---- indi_regs ----
 
 export async function getIndividualRegistrationById(
     db: Db,
@@ -203,8 +190,6 @@ export async function getAllIndividualRegistrationsByUser(
         .limit(limit)
 }
 
-// ---- logs ----
-
 export async function createLog(db: Db, reason: string, content: string): Promise<void> {
     await db.insert(logs).values({ reason, content })
 }
@@ -212,9 +197,6 @@ export async function createLog(db: Db, reason: string, content: string): Promis
 export async function getAllLogs(db: Db): Promise<LogRow[]> {
     return db.select().from(logs).orderBy(sql`created_at DESC`)
 }
-
-
-// ---- oauth_tokens ----
 
 export async function getOAuthToken(db: Db, provider: string): Promise<OAuthTokenRow | undefined> {
     const rows = await db.select().from(oauthTokens).where(eq(oauthTokens.provider, provider)).limit(1)
@@ -242,8 +224,6 @@ export async function upsertOAuthToken(db: Db, data: OAuthTokenInsert): Promise<
 
     return rows[0]
 }
-
-// ---- password reset OTPs ----
 
 export async function createPasswordResetOtp(
     db: Db,
@@ -306,8 +286,6 @@ export async function updatePasswordResetOtp(
     return rows[0]
 }
 
-// ---- auth sessions ----
-
 export async function createSession(
     db: Db,
     email: string,
@@ -352,8 +330,6 @@ export async function deleteSession(
         .delete(authSessions)
         .where(eq(authSessions.token, token))
 }
-
-// Query.ts Handlerß∂
 
 export type QueryRow = typeof queries.$inferSelect
 export type QueryInsert = typeof queries.$inferInsert

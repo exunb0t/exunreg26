@@ -89,7 +89,6 @@ export const logs = sqliteTable('logs', {
   createdAt: text('created_at').notNull().default(sql`CURRENT_TIMESTAMP`),
 })
 
-// OAUTH
 export const oauthTokens = sqliteTable('oauth_tokens', {
   provider: text('provider').primaryKey(),
   accessToken: text('access_token').notNull(),
@@ -142,8 +141,6 @@ export const authSessions = sqliteTable('auth_sessions', {
     .default(sql`CURRENT_TIMESTAMP`),
 })
 
-
-// OTPS
 export const passwordResetOtps = sqliteTable('password_reset_otps', {
   id: integer('id').primaryKey({ autoIncrement: true }),
   email: text('email').notNull(),
@@ -288,8 +285,6 @@ export const ticketReplies = sqliteTable('ticket_replies', {
 }, (t) => ({
     ticketIdx: index('idx_ticket_replies_ticket').on(t.ticketId),
 }))
-
-// QUERY.ts Handler
 
 export const queries = sqliteTable('queries', {
     id: integer('id').primaryKey({ autoIncrement: true }),
