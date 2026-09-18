@@ -37,13 +37,13 @@ class HomePage {
 
     createEventCard(event) {
         const card = document.createElement('a');
-        card.href = `/event/${Utils.slugify(event.name || event.id)}?id=${encodeURIComponent(event.id)}`;
+        card.href = `/event/${Utils.slugify(event.name || event.id)}`;
         card.className = 'event-card';
         card.dataset.eventId = event.id;
         card.addEventListener('click', (e) => {
             e.preventDefault();
             Utils.rememberEventBack(`/?focus=${encodeURIComponent(event.id)}`);
-            window.location.href = `/event/${Utils.slugify(event.name || event.id)}?id=${encodeURIComponent(event.id)}`;
+            window.location.href = `/event/${Utils.slugify(event.name || event.id)}`;
         });
         const imageUrl = event.image ? (String(event.image).startsWith('/') ? event.image : `/illustrations/${String(event.image).split('/').pop()}`) : '/assets/exun_base.webp';
         const eligibilityText = Utils.formatEligibility(event.eligibility, event.open_to_all || event.openToAll);
@@ -76,22 +76,6 @@ class HomePage {
             brochureBtn.addEventListener('click', () => {
                 window.location.href = '/brochure';
             });
-        }
-        this.updateHeroImage();
-        window.addEventListener('resize', Utils.debounce(() => {
-            this.updateHeroImage();
-        }, 250));
-    }
-
-    updateHeroImage() {
-        const heroImage = document.querySelector('.hero__image img');
-        if (!heroImage) return;
-        if (Utils.isMobile()) {
-            heroImage.style.height = '320px';
-            heroImage.style.width = 'auto';
-        } else {
-            heroImage.style.width = '600px';
-            heroImage.style.height = 'auto';
         }
     }
 }

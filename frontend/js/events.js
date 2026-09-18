@@ -12,8 +12,14 @@ class EventsPage {
         this.renderEvents();
         this.setupEventListeners();
         this.trackFilterSlider();
-        const focusId = new URLSearchParams(window.location.search).get('focus');
-        if (focusId) Utils.focusEventCard(focusId);
+        const params = new URLSearchParams(window.location.search);
+        const focusId = params.get('focus');
+        if (focusId) {
+            Utils.focusEventCard(focusId);
+            params.delete('focus');
+            const clean = window.location.pathname + (params.toString() ? `?${params.toString()}` : '') + window.location.hash;
+            window.history.replaceState(null, '', clean);
+        }
     }
 
     async setupSummaryButton() {
@@ -154,13 +160,13 @@ class EventsPage {
 
     createEventCard(event) {
         const card = document.createElement('a');
-        card.href = `/event/${Utils.slugify(event.name || event.id)}?id=${encodeURIComponent(event.id)}`;
+        card.href = `/event/${Utils.slugify(event.name || event.id)}`;
         card.className = 'event-card';
         card.dataset.eventId = event.id;
         card.addEventListener('click', (e) => {
             e.preventDefault();
             Utils.rememberEventBack(`/events?focus=${encodeURIComponent(event.id)}`);
-            window.location.href = `/event/${Utils.slugify(event.name || event.id)}?id=${encodeURIComponent(event.id)}`;
+            window.location.href = `/event/${Utils.slugify(event.name || event.id)}`;
         });
         const imageUrl = event.image ? event.image : '/assets/exun_base.webp';
         const eligibilityText = Utils.formatEligibility(event.eligibility, event.open_to_all || event.openToAll);

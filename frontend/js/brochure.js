@@ -102,6 +102,23 @@ document.addEventListener("DOMContentLoaded", async () => {
           if (text) h.id = text.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
         }
       });
+      const cleanUrl = () => {
+        window.history.replaceState(null, "", window.location.pathname + window.location.search);
+      };
+      navList.querySelectorAll("a").forEach((a) => {
+        a.addEventListener("click", (e) => {
+          const target = document.getElementById(a.getAttribute("href").slice(1));
+          if (!target) return;
+          e.preventDefault();
+          target.scrollIntoView({ behavior: "smooth", block: "start" });
+          cleanUrl();
+        });
+      });
+      if (window.location.hash) {
+        const target = document.getElementById(window.location.hash.slice(1));
+        if (target) setTimeout(() => target.scrollIntoView({ block: "start" }), 100);
+        cleanUrl();
+      }
     }
   } catch (err) {
     if (contentEl) contentEl.innerHTML = "<p>Failed to load brochure.</p>";

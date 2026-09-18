@@ -116,6 +116,7 @@
         z-index: 250;
         background: white;
         box-shadow: 0 1px 0 rgba(16,24,40,0.04);
+        overflow-x: clip;
     }
 
     .navbar__toggle { display: block; }
@@ -155,7 +156,7 @@
     }
     .navbar__nav.open,
     .navbar__nav[aria-hidden="false"] {
-        z-index: 260; 
+        z-index: 260;
     }
 
     body:has(.navbar__nav.open)::before,
@@ -166,7 +167,7 @@
         background: rgba(16,24,40,0.32);
         backdrop-filter: blur(6px);
         -webkit-backdrop-filter: blur(6px);
-        z-index: 245; 
+        z-index: 245;
         pointer-events: auto;
         transition: opacity 180ms ease;
         opacity: 1;
@@ -231,7 +232,7 @@
     }
 
     .navbar__link { text-decoration: none !important; }
-    
+
     .navbar__logo {
         width: 96px;
     }
@@ -328,7 +329,7 @@
 
     .mobile-menu__link {
         font-size: 30px;
-        font-weight: 600;
+        font-weight: 500;
         color: #6b7280;
         text-decoration: none;
         padding: 8px 0;

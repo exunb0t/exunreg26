@@ -88,6 +88,15 @@
   padding-top: 14px;
 }
 
+.ticket-side__foot-tag {
+  margin: 0 0 10px;
+  font-size: 13px;
+  letter-spacing: 0.24em;
+  line-height: 1.9;
+  font-weight: 600;
+  color: #fff;
+}
+
 .ticket-side__foot-label {
   margin: 0;
   font-size: 12px;
@@ -243,15 +252,22 @@
   left: 0;
   right: 0;
   background: #fff;
-  border: 1.5px solid #e2e6ee;
-  border-radius: 12px;
+  border: 1px solid rgba(15, 23, 42, 0.06);
+  border-radius: 8px;
   box-shadow: 0 18px 44px rgba(15, 23, 42, 0.14);
   padding: 6px;
   z-index: 50;
+  max-height: min(300px, 60vh);
+  overflow-y: auto;
 }
 
 .dropdown-panel[hidden] {
   display: none;
+}
+
+.dropdown-panel--above {
+  top: auto;
+  bottom: calc(100% + 6px);
 }
 
 .dropdown-panel [role="option"] {
@@ -327,16 +343,10 @@
 .form-foot {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-end;
   gap: 16px;
   margin-top: 8px;
   flex-wrap: wrap;
-}
-
-.form-hint {
-  margin: 0;
-  font-size: 13px;
-  color: #9ca3af;
 }
 
 .btn-submit {

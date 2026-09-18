@@ -302,9 +302,6 @@
   font-weight: 600;
   letter-spacing: 0.06em;
   color: #2977f5;
-  background: rgba(41, 119, 245, 0.1);
-  border-radius: 999px;
-  padding: 5px 14px;
 }
 
 .ticket-card__title {
@@ -322,10 +319,11 @@
 
 .ticket-status {
   flex-shrink: 0;
-  padding: 6px 18px;
+  padding: 7px 20px;
   border-radius: 999px;
-  font-size: 13px;
-  font-weight: 600;
+  font-size: 15px;
+  font-weight: 500;
+  white-space: nowrap;
 }
 
 .ticket-status--open {
@@ -393,7 +391,6 @@
   font-size: 16px;
   font-weight: 600;
   text-decoration: none;
-  box-shadow: 0 12px 28px rgba(41, 119, 245, 0.35);
   transition: transform 0.15s ease, box-shadow 0.15s ease;
 }
 

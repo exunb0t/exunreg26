@@ -23,6 +23,13 @@ class EventDetailPage {
     }
     await this.loadEvent();
     if (!this.event) return;
+    const params = new URLSearchParams(window.location.search);
+    if (params.has("id") || params.has("eventId")) {
+      params.delete("id");
+      params.delete("eventId");
+      const clean = window.location.pathname + (params.toString() ? `?${params.toString()}` : "") + window.location.hash;
+      window.history.replaceState(null, "", clean);
+    }
     this.renderEvent();
     this.setupEventListeners();
   }

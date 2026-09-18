@@ -89,7 +89,8 @@ document.addEventListener('DOMContentLoaded', function () {
     idChip.textContent = ticketDisplayId(t.id);
     const status = document.createElement('span');
     status.className = 'ticket-status ' + ticketStatusClass(t.status);
-    status.textContent = String(t.status || 'open').toUpperCase();
+    const rawStatus = String(t.status || 'open');
+    status.textContent = rawStatus.charAt(0).toUpperCase() + rawStatus.slice(1).toLowerCase();
     top.appendChild(idChip);
     top.appendChild(status);
     card.appendChild(top);
@@ -115,7 +116,9 @@ document.addEventListener('DOMContentLoaded', function () {
         reply.className = 'ticket-card__reply';
         const label = document.createElement('div');
         label.className = 'ticket-card__reply-label';
-        label.textContent = 'Admin reply' + (replies.length > 1 ? ` ${i + 1} of ${replies.length}` : '') + (r.repliedBy ? ' · ' + r.repliedBy : '');
+        const count = replies.length > 1 ? ` ${i + 1} of ${replies.length}` : '';
+        const when = r.createdAt ? ticketDate(r.createdAt) : '';
+        label.textContent = `Support reply${count}${when ? ' · ' + when : ''}`;
         const body = document.createElement('div');
         body.className = 'md-body';
         body.innerHTML = Utils.renderMarkdown(r.message || '');
@@ -128,7 +131,7 @@ document.addEventListener('DOMContentLoaded', function () {
       reply.className = 'ticket-card__reply';
       const label = document.createElement('div');
       label.className = 'ticket-card__reply-label';
-      label.textContent = 'Admin reply' + (t.repliedBy ? ' · ' + t.repliedBy : '');
+      label.textContent = 'Support reply';
       const body = document.createElement('div');
       body.className = 'md-body';
       body.innerHTML = Utils.renderMarkdown(t.adminReply);

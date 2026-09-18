@@ -59,6 +59,17 @@
     color: var(--slate-grey);
 }
 
+.hero__notice a {
+    color: var(--exun-blue);
+    font-weight: 600;
+    text-decoration: none;
+}
+
+.hero__notice a:hover {
+    color: var(--exun-blue);
+    text-decoration: underline;
+}
+
 .hero__notice .text-red {
     color: #dc2626;
     font-weight: 600;
@@ -73,6 +84,7 @@
 
 .hero__image img {
     width: 600px;
+    max-width: 100%;
     height: auto;
 }
 
@@ -163,11 +175,6 @@
     
     .events-section__title {
         font-size: 36px;
-    }
-    
-    .hero__image img {
-        height: 320px;
-        width: auto;
     }
 }
 

@@ -217,12 +217,12 @@
         if (window.summaryPage && window.summaryPage.toggleEditor) {
           Utils.rememberEventBack("/summary");
         }
-        window.location.href = `/event/${Utils.slugify(ename.trim() || eid)}?id=${encodeURIComponent(eid)}`;
+        window.location.href = `/event/${Utils.slugify(ename.trim() || eid)}`;
       } });
       if (window.summaryPage && window.summaryPage.toggleEditor) {
         items.push({ icon: "sparkle", label: "Edit registration", warn: true, action: () => window.summaryPage.toggleEditor(regCard, eid) });
       }
-      items.push({ icon: "link", label: "Copy event link", action: () => copyText(`${window.location.origin}/event/${Utils.slugify(ename.trim() || eid)}?id=${encodeURIComponent(eid)}`) });
+      items.push({ icon: "link", label: "Copy event link", action: () => copyText(`${window.location.origin}/event/${Utils.slugify(ename.trim() || eid)}`) });
       items.push({
         icon: "trash",
         label: "Delete registration",

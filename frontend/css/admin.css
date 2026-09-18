@@ -382,12 +382,10 @@
 .pill {
   display: inline-flex;
   align-items: center;
-  padding: 4px 12px;
+  padding: 7px 20px;
   border-radius: 999px;
-  font-size: 12px;
-  font-weight: 600;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
+  font-size: 15px;
+  font-weight: 500;
   white-space: nowrap;
 }
 
@@ -407,23 +405,35 @@
 }
 
 .pill--high {
-  background: rgba(239, 68, 68, 0.12);
+  padding: 0;
+  border-radius: 0;
+  font-size: 14px;
+  font-weight: 600;
   color: #b91c1c;
 }
 
 .pill--medium {
-  background: rgba(245, 158, 11, 0.14);
-  color: #b45309;
+  padding: 0;
+  border-radius: 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: #475569;
 }
 
 .pill--low {
-  background: rgba(15, 23, 42, 0.07);
+  padding: 0;
+  border-radius: 0;
+  font-size: 14px;
+  font-weight: 600;
   color: #475569;
 }
 
 .pill--neutral {
-  background: rgba(15, 23, 42, 0.07);
-  color: #475569;
+  padding: 0;
+  border-radius: 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: #94a3b8;
 }
 
 .admin-table td.cell-truncate {

@@ -80,11 +80,25 @@
       ddPanel.hidden = true;
       ddBtn.setAttribute("aria-expanded", "false");
     };
+    const placeDropdown = () => {
+      ddPanel.classList.remove("dropdown-panel--above");
+      const btnRect = ddBtn.getBoundingClientRect();
+      const height = ddPanel.offsetHeight;
+      const spaceBelow = window.innerHeight - btnRect.bottom;
+      if (height > spaceBelow - 8 && btnRect.top > spaceBelow) {
+        ddPanel.classList.add("dropdown-panel--above");
+      }
+      const rect = ddPanel.getBoundingClientRect();
+      if (rect.bottom > window.innerHeight || rect.top < 0) {
+        ddPanel.scrollIntoView({ block: "nearest" });
+      }
+    };
     ddBtn.addEventListener("click", (e) => {
       e.stopPropagation();
       const willOpen = ddPanel.hidden;
       ddPanel.hidden = !willOpen;
       ddBtn.setAttribute("aria-expanded", String(willOpen));
+      if (willOpen) placeDropdown();
     });
     ddPanel.querySelectorAll("[role='option']").forEach((opt) => {
       opt.addEventListener("click", () => {

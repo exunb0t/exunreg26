@@ -138,7 +138,7 @@ class SummaryPage {
   }
 
   eventUrl(eid, name) {
-    return `/event/${Utils.slugify(name || eid)}?id=${encodeURIComponent(eid)}`;
+    return `/event/${Utils.slugify(name || eid)}`;
   }
 
   renderRegistrationCard(r, named) {

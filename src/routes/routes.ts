@@ -29,7 +29,11 @@ export function notFoundHandler(c: AppContext) {
     if (pathname.startsWith('/api/')) return jsonError(c, 'Not found', 404)
     const last = pathname.split('/').pop() ?? ''
     if (last.includes('.')) return serveAsset(c, pathname)
-    return serveAsset(c, '/404.html')
+    const url = new URL(c.req.url)
+    url.pathname = '/404.html'
+    return c.env.ASSETS.fetch(new Request(url.toString(), c.req.raw)).then(
+        async (res: Response) => new Response(await res.text(), { status: 404, headers: { 'Content-Type': 'text/html;charset=UTF-8' } })
+    )
 }
 
 export function setupRoutes() {

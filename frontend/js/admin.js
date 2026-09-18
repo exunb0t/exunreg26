@@ -225,7 +225,14 @@ class AdminPage {
         if (!modal || !box) return;
         box.innerHTML = html;
         modal.classList.add('admin-modal--open');
-        const close = () => modal.classList.remove('admin-modal--open');
+        const close = () => {
+            modal.classList.remove('admin-modal--open');
+            document.removeEventListener('keydown', onKey);
+        };
+        const onKey = (e) => {
+            if (e.key === 'Escape') close();
+        };
+        document.addEventListener('keydown', onKey);
         box.querySelectorAll('[data-close-modal]').forEach((b) => b.addEventListener('click', close));
         modal.onclick = (e) => {
             if (e.target === modal) close();
@@ -352,13 +359,15 @@ class AdminPage {
     ticketStatusPill(status) {
         const s = String(status || 'open').toLowerCase();
         const cls = s === 'closed' ? 'pill--closed' : s === 'answered' ? 'pill--answered' : 'pill--open';
-        return `<span class="pill ${cls}">${Utils.escapeHtml(s)}</span>`;
+        const label = s.charAt(0).toUpperCase() + s.slice(1);
+        return `<span class="pill ${cls}">${Utils.escapeHtml(label)}</span>`;
     }
 
     ticketPriorityPill(priority) {
         const p = String(priority || '').toLowerCase();
         const cls = p === 'high' ? 'pill--high' : p === 'medium' ? 'pill--medium' : p === 'low' ? 'pill--low' : 'pill--neutral';
-        return `<span class="pill ${cls}">${Utils.escapeHtml(p || '—')}</span>`;
+        const label = p ? p.charAt(0).toUpperCase() + p.slice(1) : '—';
+        return `<span class="pill ${cls}">${Utils.escapeHtml(label)}</span>`;
     }
 
     ticketStamp(iso) {
