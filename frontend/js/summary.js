@@ -147,11 +147,12 @@ class SummaryPage {
     const statusClass = hasNames ? "confirmed" : "pending";
     const ev = (this.allEvents || []).find((e) => String(e.id) === String(r.eventId)) || {};
     const cap = parseInt(ev.participants || 0, 10) || 0;
-    const statusText = hasNames
+    const statusWord = hasNames ? "Registered" : "Incomplete";
+    const statusDetail = hasNames
       ? (cap > 0
-        ? `Registered · ${members.length} of ${cap} seat${cap === 1 ? "" : "s"} filled`
-        : `Registered · ${members.length} participant${members.length === 1 ? "" : "s"}`)
-      : "Incomplete · add your team";
+        ? `${members.length} of ${cap} seat${cap === 1 ? "" : "s"} filled`
+        : `${members.length} participant${members.length === 1 ? "" : "s"}`)
+      : "add your team";
     const name = r.eventName || r.eventId;
     const url = this.eventUrl(r.eventId, r.eventName);
     return `
@@ -159,7 +160,7 @@ class SummaryPage {
         <div class="registration-card__header">
           <div class="registration-card__head-text">
             <h4 class="registration-card__title"><a class="registration-card__title-link" href="${Utils.escapeHtml(url)}">${Utils.escapeHtml(name)}</a></h4>
-            <div class="reg-status"><span>${Utils.escapeHtml(statusText)}</span></div>
+            <div class="reg-status"><span class="reg-status__word">${Utils.icon(hasNames ? "task_alt" : "pending_actions", 16)}${Utils.escapeHtml(statusWord)}</span><span class="reg-status__detail">${Utils.escapeHtml(statusDetail)}</span></div>
           </div>
           <span class="reg-chevron"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg></span>
         </div>
@@ -180,7 +181,7 @@ class SummaryPage {
         <div class="registration-card__header">
           <div class="registration-card__head-text">
             <h4 class="registration-card__title"><a class="registration-card__title-link" href="${Utils.escapeHtml(url)}">${Utils.escapeHtml(name)}</a></h4>
-            <div class="reg-status"><span>Not registered</span></div>
+            <div class="reg-status"><span class="reg-status__word">${Utils.icon("pending_actions", 16)}Not registered</span></div>
           </div>
           <span class="reg-chevron"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg></span>
         </div>
@@ -280,7 +281,13 @@ class SummaryPage {
     desc.textContent = ev.description_short || ev.descriptionShort || "";
     const info = document.createElement("div");
     info.className = "reg-edit__meta";
-    info.textContent = `${Utils.formatEventMode(ev.mode)} · up to ${capacity} participant${capacity === 1 ? "" : "s"}`;
+    const modeEl = document.createElement("div");
+    modeEl.textContent = Utils.formatEventMode(ev.mode);
+    const capEl = document.createElement("div");
+    capEl.className = "reg-edit__sub";
+    capEl.textContent = `Up to ${capacity} participant${capacity === 1 ? "" : "s"}`;
+    info.appendChild(modeEl);
+    info.appendChild(capEl);
     meta.appendChild(desc);
     meta.appendChild(info);
     const rowsBox = document.createElement("div");

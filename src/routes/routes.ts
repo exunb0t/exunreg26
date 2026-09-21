@@ -123,6 +123,7 @@ export function setupRoutes() {
     app.get('/admin', (c) => serveAsset(c, '/admin.html'))
     app.get('/brochure', (c) => serveAsset(c, '/brochure.html'))
     app.get('/query', (c) => serveAsset(c, '/query.html'))
+    app.get('/query/tickets', (c) => serveAsset(c, '/query.html'))
     app.get('/event-detail', (c) => serveAsset(c, '/event-detail.html'))
     app.get('/event/:slug', (c) => serveAsset(c, '/event-detail.html'))
 

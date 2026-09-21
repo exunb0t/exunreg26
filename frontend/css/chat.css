@@ -1114,6 +1114,7 @@
 }
 
 .chat-input:focus {
+  outline: none;
   border-color: rgba(41, 119, 245, 0.25);
 }
 

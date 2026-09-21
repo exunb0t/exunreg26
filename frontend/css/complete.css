@@ -733,6 +733,7 @@ body[data-page="complete"] .button-row .login-btn {
 }
 
 #phone-field input#phone_number:focus {
+  outline: none;
   box-shadow: none !important;
 }
 

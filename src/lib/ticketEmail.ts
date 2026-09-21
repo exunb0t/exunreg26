@@ -32,8 +32,8 @@ function shell(heading: string, intro: string, body: string, cta?: { href: strin
                 <table role="presentation" style="width: 100%; max-width: 600px; background: #ffffff; border-radius: 1rem; overflow: hidden;" cellpadding="0" cellspacing="0">
                     <tr>
                         <td align="center" style="background: #2977f5; padding: 1.75rem 1.5rem 1.5rem;">
-                            <img src="https://exunclan.com/logo.png" style="width: 7rem; background: #ffffff; border-radius: 0.5rem; padding: 0.4rem 0.8rem;" alt="Exun Clan logo" />
-                            <p style="margin: 0.75rem 0 0; font-size: 1.1rem; font-weight: 600; letter-spacing: 0.25em; color: #ffffff; font-family: 'Trebuchet MS', Arial, sans-serif;">EXUN 2026 · SUPPORT</p>
+                            <img src="https://exunclan.com/logo.png" style="width: 7rem; display: block;" alt="Exun Clan logo" />
+                            <p style="margin: 0.75rem 0 0; font-size: 1.1rem; font-weight: 600; letter-spacing: 0.25em; color: #ffffff; font-family: 'Trebuchet MS', Arial, sans-serif;">EXUN 2026 SUPPORT</p>
                         </td>
                     </tr>
                     <tr>
@@ -58,7 +58,8 @@ function shell(heading: string, intro: string, body: string, cta?: { href: strin
                     }
                     <tr>
                         <td align="center" style="padding: 1.75rem 2rem 1.5rem; font-size: 0.75rem; color: #9ca3af;">
-                            <p style="margin: 0;">&copy; Exun Clan · The Technology Club of Delhi Public School, R.K. Puram</p>
+                            <p style="margin: 0;">&copy; Exun Clan</p>
+                            <p style="margin: 0.25rem 0 0;">The Technology Club of Delhi Public School, R.K. Puram</p>
                         </td>
                     </tr>
                 </table>
@@ -136,10 +137,21 @@ export interface TicketReplyMail {
     createdAt?: string | null
 }
 
+function md(s: unknown): string {
+    let h = esc(s);
+    h = h.replace(/`([^`\n]+)`/g, '<code style="background: rgba(15, 23, 42, 0.08); border-radius: 4px; padding: 0 4px;">$1</code>');
+    h = h.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+    h = h.replace(/(^|[^*\w])\*([^*\n]+)\*/g, '$1<em>$2</em>');
+    h = h.replace(/\[([^\]]+)\]\((https?:\/\/[^)\s]+)\)/g, '<a href="$2" style="color: #1f66d6;">$1</a>');
+    return h.replace(/\n/g, '<br />');
+}
+
 function replyBox(reply: TicketReplyMail, index: number): string {
-    const by = reply.repliedBy ? ` · ${esc(reply.repliedBy)}` : ''
-    return `<p style="margin: 1rem 0 0; font-size: 0.8rem; font-weight: 600; letter-spacing: 0.12em; color: #1f66d6;">REPLY ${index}${by}</p>
-    <div style="margin-top: 0.4rem; background: rgba(41, 119, 245, 0.07); border: 1px solid rgba(41, 119, 245, 0.2); border-radius: 0.75rem; padding: 1rem 1.25rem; font-size: 0.9rem; line-height: 1.6; color: #1f2937;">${esc(reply.message).replace(/\n/g, '<br />')}</div>`
+    const by = reply.repliedBy
+        ? `<p style="margin: 0.2rem 0 0; font-size: 0.75rem; color: #6b7280;">${esc(reply.repliedBy)}</p>`
+        : '';
+    return `<p style="margin: 1rem 0 0; font-size: 0.8rem; font-weight: 600; letter-spacing: 0.12em; color: #1f66d6;">REPLY ${index}</p>${by}
+    <div style="margin-top: 0.4rem; background: rgba(41, 119, 245, 0.07); border: 1px solid rgba(41, 119, 245, 0.2); border-radius: 0.75rem; padding: 1rem 1.25rem; font-size: 0.9rem; line-height: 1.6; color: #1f2937;">${md(reply.message)}</div>`
 }
 
 export function renderReplyThreadEmail(

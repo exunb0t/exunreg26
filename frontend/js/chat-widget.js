@@ -331,10 +331,23 @@
       btn.className = "exw-convo" + (c.id === state.activeId ? " active" : "");
       btn.type = "button";
       btn.dataset.cid = c.id;
-      const sub = [c.status, relTime(c.updatedAt || c.createdAt)].filter(Boolean).join(" · ");
       btn.innerHTML = `${avatarHTML(c)}<span class="exw-convo__meta"><span class="exw-convo__title"></span><span class="exw-convo__sub"></span></span>`;
       btn.querySelector(".exw-convo__title").textContent = c.title || "New conversation";
-      btn.querySelector(".exw-convo__sub").textContent = sub;
+      const subEl = btn.querySelector(".exw-convo__sub");
+      subEl.innerHTML = "";
+      if (c.status) {
+        const s = document.createElement("span");
+        s.textContent = c.status;
+        subEl.appendChild(s);
+      }
+      const rt = relTime(c.updatedAt || c.createdAt);
+      if (rt) {
+        const t = document.createElement("span");
+        t.className = "exw-convo__time";
+        t.innerHTML = Utils.icon("schedule", 13);
+        t.appendChild(document.createTextNode(rt));
+        subEl.appendChild(t);
+      }
       btn.addEventListener("click", () => selectConvo(c.id));
       els.items.appendChild(btn);
     });

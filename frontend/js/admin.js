@@ -396,23 +396,22 @@ class AdminPage {
             <div class="admin-tickets">
                 <div class="admin-section-head">
                     <h3>Support Tickets</h3>
-                    <select id="ticket-filter" class="admin-form__select" style="width:auto;">
-                        ${opts.map(([v, label]) => `<option value="${v}" ${this.ticketFilter === v ? 'selected' : ''}>${label}</option>`).join('')}
-                    </select>
+                    <div class="ticket-filters">
+                        ${opts.map(([v, label]) => `<button class="filter-btn${this.ticketFilter === v ? ' filter-btn--active' : ''}" data-ticket-filter="${v}">${label}</button>`).join('')}
+                    </div>
                 </div>
                 <div id="tickets-table-container"><div class="loading-placeholder">Loading tickets...</div></div>
             </div>`;
         const load = async () => {
-            const status = document.getElementById('ticket-filter').value;
-            this.ticketFilter = status;
+            const status = this.ticketFilter;
             try {
                 const resp = await window.ExunServices.admin.listTickets(status || undefined);
                 const list = (resp && resp.data) || [];
                 document.getElementById('tickets-table-container').innerHTML = `
                     <div class="admin-table-wrap">
                     <table class="admin-table">
-                        <thead><tr><th>ID</th><th>Subject</th><th>Email</th><th>By</th><th>Category</th><th>Priority</th><th>Status</th><th>Created</th></tr></thead>
-                        <tbody>${list.map((t) => `<tr class="ticket-row" data-ticket-id="${t.id}"><td class="cell-nowrap">#${t.id}</td><td class="cell-truncate">${Utils.escapeHtml(t.subject || '')}</td><td class="cell-truncate">${Utils.escapeHtml(t.userEmail || '')}</td><td class="cell-nowrap">${Utils.escapeHtml(t.createdBy || '')}</td><td class="cell-nowrap">${Utils.escapeHtml(t.category || '—')}</td><td data-priority-cell>${this.ticketPriorityPill(t.priority)}</td><td data-status-cell>${this.ticketStatusPill(t.status)}</td><td class="cell-nowrap">${Utils.escapeHtml(this.ticketStamp(t.createdAt) || t.createdAt || '')}</td></tr>`).join('') || '<tr><td colspan="8"><div class="admin-empty">No tickets found.</div></td></tr>'}</tbody>
+                        <thead><tr><th>ID</th><th>Subject</th><th>Email</th><th>Category</th><th>Priority</th><th>Status</th><th>Created</th></tr></thead>
+                        <tbody>${list.map((t) => `<tr class="ticket-row" data-ticket-id="${t.id}"><td class="cell-nowrap">#${t.id}</td><td class="cell-truncate">${Utils.escapeHtml(t.subject || '')}${t.createdBy === 'ai' ? ' <span class="ticket-bot">bot</span>' : ''}</td><td class="cell-truncate">${Utils.escapeHtml(t.userEmail || '')}</td><td class="cell-nowrap">${Utils.escapeHtml(t.category || '—')}</td><td data-priority-cell>${this.ticketPriorityPill(t.priority)}</td><td data-status-cell>${this.ticketStatusPill(t.status)}</td><td class="cell-nowrap">${Utils.escapeHtml(this.ticketStamp(t.createdAt) || t.createdAt || '')}</td></tr>`).join('') || '<tr><td colspan="7"><div class="admin-empty">No tickets found.</div></td></tr>'}</tbody>
                     </table>
                     </div>`;
                 document.querySelectorAll('[data-ticket-id]').forEach((row) => {
@@ -432,12 +431,18 @@ class AdminPage {
                 Utils.showToast((err && err.message) || 'Failed to load tickets', 'error');
             }
         };
-        document.getElementById('ticket-filter').addEventListener('change', load);
+        document.querySelectorAll('[data-ticket-filter]').forEach((btn) => {
+            btn.addEventListener('click', () => {
+                this.ticketFilter = btn.dataset.ticketFilter;
+                document.querySelectorAll('[data-ticket-filter]').forEach((b) => b.classList.toggle('filter-btn--active', b === btn));
+                load();
+            });
+        });
         await load();
     }
 
     async openTicketDetail(id, anchorRow) {
-        const cols = anchorRow ? anchorRow.children.length : 8;
+        const cols = anchorRow ? anchorRow.children.length : 7;
         document.querySelectorAll('.ticket-detail-row').forEach((r) => r.remove());
         if (!anchorRow) return;
         const detailRow = document.createElement('tr');
@@ -474,10 +479,15 @@ class AdminPage {
             const repliesHtml = replies.length
                 ? replies.map((r, i) => {
                     const tag = replies.length > 1 ? `Reply ${i + 1} of ${replies.length}` : 'Reply';
-                    const meta = [r.repliedBy ? Utils.escapeHtml(r.repliedBy) : '', r.createdAt ? Utils.escapeHtml(this.ticketStamp(r.createdAt) || r.createdAt) : ''].filter(Boolean).join(' · ');
-                    return `<div class="tmsg tmsg--admin"><span class="tmsg__role">${tag}${meta ? ' · ' + meta : ''}</span><div class="md-body">${Utils.renderMarkdown(String(r.message || '').slice(0, 2000))}</div></div>`;
+                    const meta = [r.repliedBy ? Utils.escapeHtml(r.repliedBy) : '', r.createdAt ? Utils.escapeHtml(this.ticketStamp(r.createdAt) || r.createdAt) : ''].filter(Boolean).join(', ');
+                    return `<div class="tmsg tmsg--admin"><span class="tmsg__role">${tag}</span>${meta ? `<span class="tmsg__meta">${meta}</span>` : ''}<div class="md-body">${Utils.renderMarkdown(String(r.message || '').slice(0, 2000))}</div></div>`;
                 }).join('')
-                : (t.adminReply ? `<div class="tmsg tmsg--admin"><span class="tmsg__role">Latest reply${t.repliedBy ? ' · ' + Utils.escapeHtml(t.repliedBy) : ''}</span><div class="md-body">${Utils.renderMarkdown(t.adminReply)}</div></div>` : '');
+                : (t.adminReply ? `<div class="tmsg tmsg--admin"><span class="tmsg__role">Latest reply</span>${t.repliedBy ? `<span class="tmsg__meta">${Utils.escapeHtml(t.repliedBy)}</span>` : ''}<div class="md-body">${Utils.renderMarkdown(t.adminReply)}</div></div>` : '');
+            const statusLabels = { open: 'Reopen', answered: 'Mark answered', closed: 'Close' };
+            const nextStates = t.status === 'closed' ? ['open'] : ['open', 'answered', 'closed'].filter((s) => s !== t.status);
+            const statusBtns = nextStates
+                .map((s) => `<button class="btn btn--secondary" data-ticket-status="${s}">${statusLabels[s]}</button>`)
+                .join('');
             cell.innerHTML = `
                 <div class="ticket-detail">
                     <div>
@@ -491,10 +501,9 @@ class AdminPage {
                         <textarea id="ticket-reply-input" class="admin-form__textarea" placeholder="Write a reply... (Markdown supported)" rows="3"></textarea>
                         <button class="btn btn--primary" id="ticket-reply-send">Reply</button>
                     </div>
+                    <p class="ticket-status-hint">Sending a reply marks this ticket as answered.</p>
                     <div class="ticket-status-row">
-                        <button class="btn btn--secondary" data-ticket-status="open">Reopen</button>
-                        <button class="btn btn--secondary" data-ticket-status="answered">Answered</button>
-                        <button class="btn btn--secondary" data-ticket-status="closed">Close</button>
+                        ${statusBtns}
                     </div>
                 </div>`;
             const sendBtn = cell.querySelector('#ticket-reply-send');
@@ -520,9 +529,10 @@ class AdminPage {
             cell.querySelectorAll('[data-ticket-status]').forEach((btn) => {
                 btn.addEventListener('click', async () => {
                     const next = btn.dataset.ticketStatus;
+                    const doneMsg = next === 'open' ? 'Ticket reopened' : next === 'closed' ? 'Ticket closed' : 'Ticket marked answered';
                     try {
                         await window.ExunServices.admin.setTicketStatus(id, next);
-                        Utils.showToast(`Ticket marked ${next}`, 'success');
+                        Utils.showToast(doneMsg, 'success');
                         this.setTicketRowStatus(anchorRow, next);
                         await this.openTicketDetail(id, anchorRow);
                     } catch (err) {

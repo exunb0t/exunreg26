@@ -79,21 +79,24 @@
     content: none !important;
 }
 
-.navbar__link.btn--primary:focus {
+.navbar__link.btn--primary:focus-visible {
     outline: none !important;
-    box-shadow: none !important;
+    box-shadow: 0 0 0 3px rgba(41, 119, 245, 0.3) !important;
 }
 
 
 .navbar__link:hover,
-.navbar__link--active {
+.navbar__link--active,
+.navbar__link:focus-visible {
     color: #2977f5 !important;
     background: none !important;
     position: relative;
+    outline: none;
 }
 
 .navbar__link--active::after,
-.navbar__link:hover::after {
+.navbar__link:hover::after,
+.navbar__link:focus-visible::after {
     content: "";
     position: absolute;
     left: 18px;
@@ -265,7 +268,7 @@
     gap: 8px;
 }
 
-[data-nav="auth"]:focus,
+[data-nav="auth"]:focus-visible,
 [data-nav="auth"]:focus-within {
     outline: none !important;
     box-shadow: none !important;

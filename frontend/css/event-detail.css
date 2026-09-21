@@ -4,12 +4,11 @@
 
 .event-detail-page {
   padding: 40px 0 0;
-  min-height: 100vh;
 }
 
 .event-detail-heading {
   font-size: clamp(32px, 5vw, 52px);
-  font-weight: 800;
+  font-weight: 600;
   color: #33373b;
   margin: 0 0 36px 0;
   line-height: 1.15;
@@ -24,7 +23,7 @@
   grid-template-columns: 1.55fr 1fr;
   gap: 40px;
   align-items: start;
-  padding-bottom: 32px;
+  padding-bottom: 56px;
 }
 
 .event-detail-main {

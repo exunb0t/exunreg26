@@ -168,6 +168,9 @@
 }
 
 .otp-resend {
+  display: flex;
+  justify-content: center;
+  gap: 18px;
   text-align: center;
   margin-top: 16px;
 }

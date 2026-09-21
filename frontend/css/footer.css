@@ -46,7 +46,7 @@ footer {
 
 @media (max-width: 768px) {
     .footer {
-        margin-top: 60px;
+        margin-top: 32px;
         padding: 16px;
     }
     

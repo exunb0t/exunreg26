@@ -185,6 +185,7 @@
 }
 
 .field-input:focus {
+  outline: none;
   border-color: #2977f5;
   background: #fff;
 }
@@ -230,6 +231,12 @@
 .dropdown-btn[aria-expanded="true"] {
   border-color: #2977f5;
   background: #fff;
+}
+
+.dropdown-btn:focus-visible {
+  outline: none;
+  border-color: #2977f5;
+  box-shadow: 0 0 0 3px rgba(41, 119, 245, 0.1);
 }
 
 .dropdown-btn svg {

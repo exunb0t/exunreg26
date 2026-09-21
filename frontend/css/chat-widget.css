@@ -204,6 +204,17 @@
 .exw-convo__sub {
   font-size: 13px;
   color: #6b7280;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.exw-convo__time {
+  font-size: 12px;
+  opacity: 0.75;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
 }
 
 .exw-thread {
@@ -563,6 +574,7 @@
 }
 
 .exw-thread__input input:focus {
+  outline: none;
   border-color: #2977f5;
   background: #fff;
 }

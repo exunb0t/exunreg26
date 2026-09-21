@@ -21,6 +21,13 @@
     border-color: var(--exun-blue);
 }
 
+.event-card:focus-visible {
+    outline: none;
+    transform: translateY(-4px);
+    border-color: var(--exun-blue);
+    box-shadow: 0 0 0 3px rgba(41, 119, 245, 0.15), 0 8px 32px rgba(41, 119, 245, 0.15);
+}
+
 .event-card--flash {
     animation: eventCardFlash 2.2s ease;
 }

@@ -54,7 +54,6 @@ document.addEventListener('DOMContentLoaded', function () {
 
   const form = document.getElementById('query-form');
   const input = document.getElementById('query-input');
-  const results = document.getElementById('results');
 
   function ticketStatusClass(status) {
     const s = String(status || '').toLowerCase();
@@ -65,6 +64,20 @@ document.addEventListener('DOMContentLoaded', function () {
 
   function ticketDisplayId(id) {
     return `#Ex-${1000 + Number(id || 0)}`;
+  }
+
+  function ticketDateTime(iso) {
+    try {
+      const s = String(iso || '').trim();
+      if (!s) return '';
+      const d = s.includes('T') ? new Date(s) : new Date(s.replace(' ', 'T') + 'Z');
+      if (Number.isNaN(d.getTime())) return '';
+      const date = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+      const time = d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+      return `${date}, ${time}`;
+    } catch (e) {
+      return '';
+    }
   }
 
   function ticketDate(iso) {
@@ -98,27 +111,55 @@ document.addEventListener('DOMContentLoaded', function () {
     title.className = 'ticket-card__title';
     title.textContent = t.subject || 'Untitled';
     card.appendChild(title);
-    const metaBits = [t.category, t.priority ? `Priority: ${t.priority}` : '', ticketDate(t.createdAt)].filter(Boolean);
-    if (metaBits.length) {
-      const meta = document.createElement('p');
-      meta.className = 'ticket-card__meta';
-      meta.textContent = metaBits.join(' · ');
-      card.appendChild(meta);
+    const replies = Array.isArray(t.replies) ? t.replies : [];
+    const facts = [
+      t.category ? ['category', 'Category', t.category] : null,
+      t.priority ? ['flag', 'Priority', t.priority] : null,
+      ticketDate(t.createdAt) ? ['calendar_month', 'Opened', ticketDate(t.createdAt)] : null,
+      replies.length > 0 ? ['forum', 'Replies', String(replies.length)] : null,
+    ].filter(Boolean);
+    if (facts.length > 0) {
+      const dl = document.createElement('dl');
+      dl.className = 'ticket-facts';
+      facts.forEach(([glyph, k, v]) => {
+        const row = document.createElement('div');
+        row.className = 'ticket-fact';
+        const dt = document.createElement('dt');
+        dt.innerHTML = Utils.icon(glyph, 16);
+        dt.appendChild(document.createTextNode(k));
+        const dd = document.createElement('dd');
+        dd.textContent = v;
+        row.appendChild(dt);
+        row.appendChild(dd);
+        dl.appendChild(row);
+      });
+      card.appendChild(dl);
     }
     const msg = document.createElement('p');
     msg.className = 'ticket-card__message';
     msg.textContent = t.message || '';
     card.appendChild(msg);
-    const replies = Array.isArray(t.replies) ? t.replies : [];
     if (replies.length > 0) {
-      replies.forEach((r, i) => {
+      const ordered = [...replies].reverse();
+      const collapsed = ordered.length > 2;
+      ordered.forEach((r) => {
         const reply = document.createElement('div');
         reply.className = 'ticket-card__reply';
+        if (collapsed) reply.hidden = true;
         const label = document.createElement('div');
         label.className = 'ticket-card__reply-label';
-        const count = replies.length > 1 ? ` ${i + 1} of ${replies.length}` : '';
-        const when = r.createdAt ? ticketDate(r.createdAt) : '';
-        label.textContent = `Support reply${count}${when ? ' · ' + when : ''}`;
+        const who = document.createElement('span');
+        who.className = 'ticket-card__reply-who';
+        who.innerHTML = Utils.icon('support_agent', 16);
+        who.appendChild(document.createTextNode('Support team'));
+        label.appendChild(who);
+        const when = r.createdAt ? ticketDateTime(r.createdAt) : '';
+        if (when) {
+          const date = document.createElement('span');
+          date.className = 'ticket-card__reply-date';
+          date.textContent = when;
+          label.appendChild(date);
+        }
         const body = document.createElement('div');
         body.className = 'md-body';
         body.innerHTML = Utils.renderMarkdown(r.message || '');
@@ -126,18 +167,44 @@ document.addEventListener('DOMContentLoaded', function () {
         reply.appendChild(body);
         card.appendChild(reply);
       });
+      const shown = card.querySelectorAll('.ticket-card__reply');
+      if (shown.length > 0) shown[0].hidden = false;
+      if (collapsed) {
+        const toggle = document.createElement('button');
+        toggle.type = 'button';
+        toggle.className = 'ticket-thread-toggle';
+        const hidden = ordered.length - 1;
+        const moreText = `Show ${hidden} earlier ${hidden === 1 ? 'reply' : 'replies'}`;
+        let expanded = false;
+        toggle.textContent = moreText;
+        toggle.addEventListener('click', () => {
+          expanded = !expanded;
+          shown.forEach((el, idx) => { el.hidden = !expanded && idx > 0; });
+          toggle.textContent = expanded ? 'Show less' : moreText;
+        });
+        card.appendChild(toggle);
+      }
     } else if (t.adminReply) {
       const reply = document.createElement('div');
       reply.className = 'ticket-card__reply';
       const label = document.createElement('div');
       label.className = 'ticket-card__reply-label';
-      label.textContent = 'Support reply';
+      const who = document.createElement('span');
+      who.className = 'ticket-card__reply-who';
+      who.innerHTML = Utils.icon('support_agent', 16);
+      who.appendChild(document.createTextNode('Support team'));
+      label.appendChild(who);
       const body = document.createElement('div');
       body.className = 'md-body';
       body.innerHTML = Utils.renderMarkdown(t.adminReply);
       reply.appendChild(label);
       reply.appendChild(body);
       card.appendChild(reply);
+    } else {
+      const empty = document.createElement('p');
+      empty.className = 'ticket-card__noreply';
+      empty.textContent = 'No replies yet. You\'ll get an email when we respond to your query.';
+      card.appendChild(empty);
     }
     return card;
   }
@@ -158,55 +225,27 @@ document.addEventListener('DOMContentLoaded', function () {
       box.innerHTML = '';
       list.forEach((t) => box.appendChild(renderTicket(t)));
       section.style.display = '';
+      if (window.location.pathname.endsWith('/tickets') || window.location.hash === '#tickets-section') {
+        section.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        if (window.location.hash === '#tickets-section') {
+          window.history.replaceState(null, '', '/query/tickets');
+        }
+      }
     } catch (e) {}
   }
 
   loadMyTickets();
 
-  function addResult(subject, message, status) {
-    if (!results) return;
-    const placeholder = results.querySelector('.text-muted');
-    if (placeholder) placeholder.remove();
-    const container = document.createElement('div');
-    container.className = 'answer-card';
-    const qElem = document.createElement('div');
-    qElem.className = 'answer-query';
-    qElem.textContent = subject;
-    const aElem = document.createElement('div');
-    aElem.className = 'answer-body';
-    aElem.textContent = status === 'sent' ? `Ticket submitted: ${message}` : message;
-    container.appendChild(qElem);
-    container.appendChild(aElem);
-    results.prepend(container);
-  }
-
   if (form) {
-    form.addEventListener('submit', async function (e) {
+    form.addEventListener('submit', function (e) {
       e.preventDefault();
       const message = (input.value || '').trim();
-      const subject = (message.slice(0, 80) || 'Support query').trim();
       if (!message) return;
-      const session = await window.ExunServices.api.getSession().catch(() => ({ authenticated: false }));
-      if (!session.authenticated) {
-        Utils.showToast('Please login to submit a query', 'error');
-        window.location.href = '/login';
-        return;
-      }
-      try {
-        await window.ExunServices.query.submit(subject, message);
-        addResult(subject, message, 'sent');
-        Utils.showToast('Query submitted successfully', 'success');
-        input.value = '';
-  loadMyTickets().then(() => {
-    if (window.location.hash === '#tickets-section') {
-      const section = document.getElementById('tickets-section');
-      if (section && section.style.display !== 'none') {
-        section.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      }
-    }
-  });
-      } catch (err) {
-        Utils.showToast((err && err.message) || 'Failed to submit query', 'error');
+      input.value = '';
+      if (window.ExunChat && typeof window.ExunChat.ask === 'function') {
+        window.ExunChat.ask(message);
+      } else {
+        Utils.showToast('Chat is still loading, please try again', 'info');
       }
     });
   }
