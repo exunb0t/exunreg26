@@ -14,6 +14,7 @@ async function sheetsFetch(env: Bindings, path: string, init?: RequestInit): Pro
             'Content-Type': 'application/json',
             ...(init?.headers ?? {}),
         },
+        signal: AbortSignal.timeout(20000),
     })
     if (!res.ok) throw new Error(`Sheets API ${path} failed (${res.status}): ${await res.text()}`)
     if (res.status === 204) return null

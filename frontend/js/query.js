@@ -217,7 +217,18 @@ document.addEventListener('DOMContentLoaded', function () {
     try {
       session = await window.ExunServices.api.getSession();
     } catch (e) {}
-    if (!session.authenticated) return;
+    if (!session.authenticated) {
+      const prompt = document.createElement('p');
+      prompt.className = 'ticket-card__noreply';
+      const link = document.createElement('a');
+      link.href = '/login';
+      link.textContent = 'Log in to view your tickets';
+      prompt.appendChild(link);
+      box.innerHTML = '';
+      box.appendChild(prompt);
+      section.style.display = '';
+      return;
+    }
     try {
       const resp = await window.ExunServices.query.mine();
       const list = (resp && resp.data) || [];

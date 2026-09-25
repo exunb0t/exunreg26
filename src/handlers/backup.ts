@@ -39,7 +39,8 @@ export async function handleOAuth2Callback(c: AppContext) {
     const state = c.req.query('state')
     const expectedState = getCookie(c, STATE_COOKIE)
 
-    deleteCookie(c, STATE_COOKIE, { path: '/' })
+    const clearOpts = authCookieOpts(c, 0)
+    deleteCookie(c, STATE_COOKIE, { path: clearOpts.path, secure: clearOpts.secure, sameSite: clearOpts.sameSite, httpOnly: clearOpts.httpOnly })
 
     if (!state || !expectedState || state !== expectedState) {
         return jsonError(c, 'state mismatch', 400)
@@ -52,6 +53,10 @@ export async function handleOAuth2Callback(c: AppContext) {
     const clientSecret = c.env.GOOGLE_CLIENT_SECRET
     if (!clientId || !clientSecret) {
         return jsonError(c, 'Google OAuth credentials not configured', 500)
+    }
+    const pepper = (c.env.AUTH_SALT ?? '').trim()
+    if (!pepper) {
+        return jsonError(c, 'Server misconfigured', 500)
     }
 
     const body = new URLSearchParams({
@@ -66,11 +71,12 @@ export async function handleOAuth2Callback(c: AppContext) {
         method: 'POST',
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
         body,
+        signal: AbortSignal.timeout(15000),
     })
 
     if (!tokenRes.ok) {
-        const errText = await tokenRes.text()
-        return jsonError(c, `tok exchange failed: ${errText}`, 502)
+        console.error(JSON.stringify({ job: 'oauthTokenExchange', status: tokenRes.status }))
+        return jsonError(c, 'Google authorization failed. Please try again.', 502)
     }
 
     const token = await tokenRes.json<{
@@ -84,11 +90,11 @@ export async function handleOAuth2Callback(c: AppContext) {
     const expiresAt = token.expires_in ? new Date(Date.now() + token.expires_in * 1000).toISOString() : null
 
     const db = getDb(c.env)
-    const salt = c.env.AUTH_SALT || ''
+    const salt = pepper
     await upsertOAuthToken(db, {
         provider: 'google_drive',
-        accessToken: await encryptSecret(token.access_token, salt),
-        refreshToken: token.refresh_token ? await encryptSecret(token.refresh_token, salt) : token.refresh_token,
+        accessToken: await encryptSecret(token.access_token, salt, 'google_drive'),
+        refreshToken: token.refresh_token ? await encryptSecret(token.refresh_token, salt, 'google_drive') : token.refresh_token,
         scope: token.scope,
         tokenType: token.token_type,
         expiresAt,

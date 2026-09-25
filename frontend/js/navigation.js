@@ -5,6 +5,10 @@ class Navigation {
     }
 
     async init() {
+        const authContainer = document.querySelector('[data-nav="auth"]');
+        if (authContainer && !authContainer.textContent.trim()) {
+            authContainer.innerHTML = `<span class="navbar__link navbar__link--loading" aria-hidden="true">…</span>`;
+        }
         this.setupEventListeners();
         await this.loadUserState();
         this.updateNavigation();
@@ -213,7 +217,7 @@ class Navigation {
             Utils.setLoading(btn, true);
             await window.ExunServices.api.logout();
             Utils.showToast('Logged out successfully', 'success');
-            setTimeout(() => window.location.href = '/', 800);
+            setTimeout(() => window.location.reload(), 800);
         } catch (error) {
             Utils.showToast('Logout failed', 'error');
         } finally {

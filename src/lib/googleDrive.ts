@@ -7,18 +7,19 @@ export async function getOAuthAccessToken(db: Db, env: Bindings): Promise<string
     const token = await queries.getOAuthToken(db, 'google_drive')
     if (!token) throw new Error('Google account not connected')
 
-    const salt = env.AUTH_SALT || ''
+    const salt = (env.AUTH_SALT ?? '').trim()
+    if (!salt) throw new Error('Server misconfigured')
     let accessToken: string
     try {
-        accessToken = await decryptSecret(token.accessToken, salt)
+        accessToken = await decryptSecret(token.accessToken, salt, 'google_drive')
     } catch {
         throw new Error('Stored Google credentials are invalid. Please reconnect.')
     }
 
-    const refreshToken = token.refreshToken ? await decryptSecret(token.refreshToken, salt).catch(() => null) : null
-    const expiresAt = token.expiresAt ? new Date(token.expiresAt) : null
+    const refreshToken = token.refreshToken ? await decryptSecret(token.refreshToken, salt, 'google_drive').catch(() => null) : null
+    const expTime = token.expiresAt ? new Date(token.expiresAt).getTime() : NaN
 
-    if (expiresAt && expiresAt.getTime() <= Date.now() && refreshToken) {
+    if ((!Number.isFinite(expTime) || expTime <= Date.now()) && refreshToken) {
         const clientId = env.GOOGLE_CLIENT_ID
         const clientSecret = env.GOOGLE_CLIENT_SECRET
         if (!clientId || !clientSecret) {
@@ -34,6 +35,7 @@ export async function getOAuthAccessToken(db: Db, env: Bindings): Promise<string
                 refresh_token: refreshToken,
                 grant_type: 'refresh_token',
             }),
+            signal: AbortSignal.timeout(15000),
         })
         if (!tokenRes.ok) throw new Error(`Failed to refresh Google token: ${await tokenRes.text()}`)
 
@@ -41,7 +43,7 @@ export async function getOAuthAccessToken(db: Db, env: Bindings): Promise<string
         accessToken = refreshed.access_token
         await queries.upsertOAuthToken(db, {
             provider: 'google_drive',
-            accessToken: await encryptSecret(accessToken, salt),
+            accessToken: await encryptSecret(accessToken, salt, 'google_drive'),
             refreshToken: token.refreshToken,
             scope: token.scope,
             tokenType: token.tokenType,
@@ -65,6 +67,7 @@ async function driveFetch(token: string, path: string, init?: RequestInit): Prom
     const res = await fetch(`https://www.googleapis.com/drive/v3/${path}`, {
         ...init,
         headers: { Authorization: `Bearer ${token}`, ...(init?.headers ?? {}) },
+        signal: AbortSignal.timeout(20000),
     })
     if (!res.ok) throw new Error(`Drive API ${path} failed (${res.status}): ${await res.text()}`)
     if (res.status === 204) return null
@@ -101,6 +104,7 @@ export async function uploadBackup(
             'Content-Type': `multipart/related; boundary=${boundary}`,
         },
         body,
+        signal: AbortSignal.timeout(60000),
     })
     if (!res.ok) throw new Error(`Drive upload failed (${res.status}): ${await res.text()}`)
     const data = await res.json<{ id: string }>()

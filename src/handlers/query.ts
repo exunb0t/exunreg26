@@ -5,6 +5,7 @@ import * as queries from '../db/queries'
 import { getEmailFromCookie } from '../middleware/auth'
 import { openTicket } from '../lib/tickets'
 import { parseLimit } from '../lib/paging'
+import { validateTicketInput } from '../lib/validation'
 
 
 export async function queryHandler(c: AppContext) {
@@ -30,12 +31,9 @@ export async function queryHandler(c: AppContext) {
         .catch(() => null)
 
 
-    if (!payload?.subject || !payload?.message) {
-        return jsonError(
-            c,
-            'Subject and message required',
-            400
-        )
+    const checked = validateTicketInput({ subject: payload?.subject, message: payload?.message })
+    if (!checked.ok) {
+        return jsonError(c, checked.error, 400)
     }
 
 
@@ -45,8 +43,8 @@ export async function queryHandler(c: AppContext) {
         {
             conversationId: null,
             userEmail: email,
-            subject: payload.subject,
-            message: payload.message,
+            subject: checked.subject,
+            message: checked.message,
             createdBy: 'user',
         },
         (promise) => c.executionCtx.waitUntil(promise)

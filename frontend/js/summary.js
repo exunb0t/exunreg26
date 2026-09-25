@@ -224,16 +224,17 @@ class SummaryPage {
     }
   }
 
-  editorRow(member) {
+  editorRow(member, idx) {
     const m = member || {};
+    const n = idx == null ? "" : ` ${idx + 1}`;
     const row = document.createElement("div");
     row.className = "reg-edit-row";
     const esc = (v) => String(v == null ? "" : v).replace(/"/g, "&quot;");
     row.innerHTML = `
-      <input class="form-input" data-f="name" placeholder="Full name" autocomplete="off" readonly value="${esc(m.name)}" />
-      <input class="form-input" data-f="email" placeholder="Email" autocomplete="off" readonly value="${esc(m.email)}" />
-      <input class="form-input" data-f="class" placeholder="Class" autocomplete="off" readonly value="${esc(m.class)}" />
-      <input class="form-input" data-f="phone" placeholder="Phone" autocomplete="off" readonly value="${esc(m.phone)}" />`;
+      <input class="form-input" data-f="name" placeholder="Full name${n}" autocomplete="off" readonly value="${esc(m.name)}" />
+      <input class="form-input" data-f="email" placeholder="Email${n}" autocomplete="off" readonly value="${esc(m.email)}" />
+      <input class="form-input" data-f="class" placeholder="Class${n}" autocomplete="off" readonly value="${esc(m.class)}" />
+      <input class="form-input" data-f="phone" placeholder="Phone${n}" autocomplete="off" readonly value="${esc(m.phone)}" />`;
     return row;
   }
 
@@ -294,7 +295,7 @@ class SummaryPage {
     rowsBox.className = "reg-edit__rows";
     const start = [];
     for (let i = 0; i < capacity; i++) start.push(members[i] || {});
-    start.forEach((m) => rowsBox.appendChild(this.editorRow(m)));
+    start.forEach((m, i) => rowsBox.appendChild(this.editorRow(m, i)));
     meta.appendChild(rowsBox);
     const btns = document.createElement("div");
     btns.className = "reg-edit__actions";
@@ -310,7 +311,7 @@ class SummaryPage {
         try {
           await window.ExunServices.registrations.remove(eventId);
           Utils.showToast("Registration deleted", "success");
-          await this.refreshData();
+          await this.refreshData(true);
         } catch (err) {
           Utils.showToast((err && err.message) || "Delete failed", "error");
         }
@@ -352,10 +353,16 @@ class SummaryPage {
   async saveEditor(inner, eventId, isUpdate) {
     const rows = this.editorSnapshot(inner);
     const students = [];
-    for (const r of rows) {
-      if (!r.name) continue;
+    for (let i = 0; i < rows.length; i++) {
+      const r = rows[i];
+      const n = i + 1;
+      if (!r.name && !r.email && !r.cls && !r.phone) continue;
+      if (!r.name) {
+        Utils.showToast(`Participant ${n}: name is required`, "error");
+        return;
+      }
       if (!r.email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(r.email)) {
-        Utils.showToast(`Valid email required for ${r.name || "each participant"}`, "error");
+        Utils.showToast(`Participant ${n} (${r.name}): valid email required`, "error");
         return;
       }
       students.push({ fullname: r.name, email: r.email, class: r.cls, phone: r.phone });
@@ -367,12 +374,12 @@ class SummaryPage {
     try {
       if (isUpdate) {
         await window.ExunServices.registrations.update({ eventId, students });
-        Utils.showToast("Registration updated", "success");
+        Utils.showToast(`Registration updated (${students.length} participant${students.length === 1 ? "" : "s"})`, "success");
       } else {
         await window.ExunServices.registrations.submit({ eventId, students });
-        Utils.showToast("Registration saved", "success");
+        Utils.showToast(`Registered ${students.length} participant${students.length === 1 ? "" : "s"}`, "success");
       }
-      await this.refreshData();
+      await this.refreshData(true);
     } catch (err) {
       Utils.showToast((err && err.message) || "Save failed", "error");
     }
@@ -395,19 +402,12 @@ class SummaryPage {
     });
     const editBtn = document.getElementById("edit-profile-btn");
     if (editBtn) editBtn.addEventListener("click", () => (window.location.href = "/complete"));
-    const logoutBtn = document.getElementById("logout-btn");
-    if (logoutBtn) {
-      logoutBtn.addEventListener("click", async () => {
-        await window.ExunServices.api.logout();
-        window.location.href = "/login";
-      });
-    }
   }
 
-  async refreshData() {
+  async refreshData(quiet) {
     await this.loadData();
     this.renderSummary();
-    Utils.showToast("Data refreshed successfully", "success");
+    if (!quiet) Utils.showToast("Data refreshed successfully", "success");
   }
 }
 

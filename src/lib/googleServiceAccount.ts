@@ -95,6 +95,7 @@ export async function getServiceAccountToken(env: Bindings): Promise<string> {
             grant_type: 'urn:ietf:params:oauth:grant-type:jwt-bearer',
             assertion,
         }),
+        signal: AbortSignal.timeout(15000),
     })
     if (!res.ok) throw new Error(`Service account token exchange failed: ${await res.text()}`)
 

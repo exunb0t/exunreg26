@@ -13,12 +13,13 @@ type RateLimiterBindingName = 'API_RATE_LIMITER' | 'AUTH_RATE_LIMITER' | 'CHAT_R
 
 export function rateLimiter(options: { windowMs: number; maxRequests: number; bindingName?: RateLimiterBindingName }): MiddlewareHandler<{ Bindings: Bindings }> {
     return async (c, next) => {
-        const ip = c.req.header('cf-connecting-ip') || c.req.header('x-forwarded-for') || 'unknown-ip'
+        const ip = c.req.header('cf-connecting-ip') || 'unknown-ip'
 
-        const cfBinding = options.bindingName ? c.env[options.bindingName] : c.env.API_RATE_LIMITER
+        const cfBinding = options.bindingName ? c.env[options.bindingName] : undefined
         if (cfBinding && typeof cfBinding.limit === 'function') {
             const { success } = await cfBinding.limit({ key: ip })
             if (!success) {
+                c.header('Retry-After', '60')
                 return jsonError(c, 'Too many requests. Please try again later', 429)
             }
             await next()
@@ -28,9 +29,11 @@ export function rateLimiter(options: { windowMs: number; maxRequests: number; bi
         const key = `${options.bindingName ?? 'local'}:${ip}`
         const now = Date.now()
 
-        for (const k in store) {
-            if (store[k].resetTime < now) {
-                delete store[k]
+        if (Object.keys(store).length > 1000) {
+            for (const k in store) {
+                if (store[k].resetTime < now) {
+                    delete store[k]
+                }
             }
         }
 
@@ -61,3 +64,9 @@ export const apiRateLimiter = rateLimiter({ windowMs: 60 * 1000, maxRequests: 10
 export const authRateLimiter = rateLimiter({ windowMs: 60 * 1000, maxRequests: 10, bindingName: 'AUTH_RATE_LIMITER' })
 
 export const chatRateLimiter = rateLimiter({ windowMs: 60 * 1000, maxRequests: 20, bindingName: 'CHAT_RATE_LIMITER' })
+
+export function adminRateLimiterFallback(): MiddlewareHandler<{ Bindings: Bindings }> {
+    return rateLimiter({ windowMs: 60 * 1000, maxRequests: 5 })
+}
+
+export const adminRateLimiter = adminRateLimiterFallback()

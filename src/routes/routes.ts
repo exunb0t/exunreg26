@@ -2,7 +2,7 @@ import { Hono } from 'hono'
 import type { Bindings, AppContext } from '../types'
 import { jsonError } from '../lib/response'
 import { adminRequired, authRequired } from '../middleware/auth'
-import { apiRateLimiter, authRateLimiter, chatRateLimiter } from '../middleware/rateLimit'
+import { adminRateLimiter, apiRateLimiter, authRateLimiter, chatRateLimiter } from '../middleware/rateLimit'
 import { cacheMiddleware } from '../middleware/cache'
 import * as handlers from '../handlers/handlers'
 import * as authHandlers from '../handlers/auth'
@@ -47,7 +47,7 @@ export function setupRoutes() {
     app.get('/api/auth/session', authHandlers.getSession)
 
     app.get('/api/admin/oauth2/start', adminRequired, backupHandlers.startOAuth2)
-    app.get('/oauth2callback', backupHandlers.handleOAuth2Callback)
+    app.get('/oauth2callback', adminRequired, backupHandlers.handleOAuth2Callback)
 
     app.post('/api/auth/send-otp', authHandlers.sendOTP)
     app.post('/api/auth/login', handlers.login)
@@ -99,8 +99,8 @@ export function setupRoutes() {
     app.post('/api/admin/send-invite', adminRequired, adminHandlers.sendInvite)
     app.post('/api/admin/import_events', adminRequired, adminHandlers.importEvents)
 
-    app.post('/api/admin/export-sheets', adminRequired, exportHandlers.exportSheets)
-    app.post('/api/admin/backup-now', adminRequired, exportHandlers.backupNow)
+    app.post('/api/admin/export-sheets', adminRequired, adminRateLimiter, exportHandlers.exportSheets)
+    app.post('/api/admin/backup-now', adminRequired, adminRateLimiter, exportHandlers.backupNow)
 
     app.get('/api/admin/tickets', adminRequired, adminTicketHandlers.listTickets)
     app.get('/api/admin/tickets/:id', adminRequired, adminTicketHandlers.getTicket)

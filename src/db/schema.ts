@@ -48,7 +48,7 @@ export const registrations = sqliteTable('registrations', {
   createdAt: text('created_at').notNull().default(sql`CURRENT_TIMESTAMP`),
   updatedAt: text('updated_at').notNull().default(sql`CURRENT_TIMESTAMP`),
 }, (t) => ({
-  eventUserIdx: index('idx_registrations_event_user').on(t.eventId, t.userId),
+  eventUserIdx: uniqueIndex('idx_registrations_event_user').on(t.eventId, t.userId),
   statusIdx: index('idx_registrations_status').on(t.status),
 }))
 
@@ -153,7 +153,9 @@ export const passwordResetOtps = sqliteTable('password_reset_otps', {
   requestDay: text('request_day').notNull().default(''),
 
   attemptCount: integer('attempt_count').notNull().default(0),
-})
+}, (t) => ({
+  emailIdx: uniqueIndex('idx_password_reset_otps_email').on(t.email),
+}))
 
 export const conversations = sqliteTable('conversations', {
     id: text('id').primaryKey(),

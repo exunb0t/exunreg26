@@ -88,7 +88,7 @@ export async function syncSources(c: AppContext) {
         return jsonOk(c, result, 'Source synced')
     }
 
-    c.executionCtx.waitUntil(syncAllKbSources(db, c.env))
+    c.executionCtx.waitUntil(syncAllKbSources(db, c.env).catch((err) => queries.createLog(db, 'kb-sync-failed', err instanceof Error ? err.message : String(err))))
     return jsonOk(c, { started: true }, 'Sync started in background')
 }
 
@@ -148,6 +148,6 @@ export async function seedFromEnv(c: AppContext) {
         results.push(syncKbSource(db, c.env, source))
     }
 
-    c.executionCtx.waitUntil(Promise.all(results))
+    c.executionCtx.waitUntil(Promise.all(results).catch((err) => queries.createLog(db, 'kb-seed-failed', err instanceof Error ? err.message : String(err))))
     return jsonOk(c, { added: created.length, failed, started: true }, 'Seeded from GOOGLE_DOC_URLS, sync running in background')
 }

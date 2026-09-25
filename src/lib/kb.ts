@@ -4,11 +4,12 @@ import * as queries from '../db/queries'
 import type { KbSourceRow } from '../db/queries'
 import { fetchGoogleDocHtml, googleDocHtmlToMarkdown, hashContent } from './googleDocs'
 import { chunkMarkdown, type MarkdownChunk } from './chunk'
-import { embedTexts } from './embeddings'
+import { embedTexts, EMBEDDING_MODEL_VERSION } from './embeddings'
 import { chunkPointId, ensureCollection, upsertChunkVectors, deleteChunkVectors } from './qdrant'
 
 const EMBED_BATCH_SIZE = 20
 const KB_CHUNKER_VERSION = 'v2'
+const MAX_CHUNKS_PER_SOURCE = 200
 
 const REPO_SOURCES = [
     { url: 'repo:events.json', path: '/data/events.json', title: 'Events catalog', kind: 'events-json' },
@@ -202,7 +203,7 @@ export async function syncKbSource(db: Db, env: Bindings, source: KbSourceRow): 
             const res = await env.ASSETS.fetch(new Request(`https://kb.local${repo.path}`))
             if (!res.ok) throw new Error(`Repo asset ${repo.path} returned ${res.status}`)
             const raw = await res.text()
-            contentHash = await hashContent(`${KB_CHUNKER_VERSION}\n${raw}`)
+            contentHash = await hashContent(`${KB_CHUNKER_VERSION}\n${EMBEDDING_MODEL_VERSION}\n${raw}`)
 
             if (contentHash === source.contentHash) {
                 await queries.updateKbSource(db, source.id, {
@@ -217,7 +218,7 @@ export async function syncKbSource(db: Db, env: Bindings, source: KbSourceRow): 
             chunks = repo.kind === 'events-json' ? chunkEventsJson(raw) : chunkMarkdown(raw)
         } else {
             const { html, title: docTitle } = await fetchGoogleDocHtml(source.docId)
-            contentHash = await hashContent(`${KB_CHUNKER_VERSION}\n${html}`)
+            contentHash = await hashContent(`${KB_CHUNKER_VERSION}\n${EMBEDDING_MODEL_VERSION}\n${html}`)
 
             if (contentHash === source.contentHash) {
                 await queries.updateKbSource(db, source.id, {
@@ -233,13 +234,14 @@ export async function syncKbSource(db: Db, env: Bindings, source: KbSourceRow): 
             chunks = isScheduleDoc(markdown) ? chunkSchedule(markdown) : chunkMarkdown(markdown)
         }
 
+        const capped = chunks.slice(0, MAX_CHUNKS_PER_SOURCE)
         const oldChunks = await queries.getKbChunksBySource(db, source.id, 10000)
         const oldVectorIds = new Set(oldChunks.map((c) => c.vectorId))
 
         const vectors: { id: string; values: number[]; sourceId: number; title: string; text: string }[] = []
 
-        for (let i = 0; i < chunks.length; i += EMBED_BATCH_SIZE) {
-            const batch = chunks.slice(i, i + EMBED_BATCH_SIZE)
+        for (let i = 0; i < capped.length; i += EMBED_BATCH_SIZE) {
+            const batch = capped.slice(i, i + EMBED_BATCH_SIZE)
             const embeddings = await embedTexts(env, batch.map((c) => (c.heading ? `${c.heading}\n${c.text}` : c.text)))
 
             batch.forEach((chunk, j) => {
@@ -277,13 +279,13 @@ export async function syncKbSource(db: Db, env: Bindings, source: KbSourceRow): 
         await queries.updateKbSource(db, source.id, {
             title,
             contentHash,
-            chunkCount: chunks.length,
+            chunkCount: capped.length,
             status: 'synced',
             errorMessage: null,
             lastSyncedAt: new Date().toISOString(),
         })
 
-        return { sourceId: source.id, success: true, chunkCount: chunks.length }
+        return { sourceId: source.id, success: true, chunkCount: capped.length }
     } catch (err: any) {
         await queries.updateKbSource(db, source.id, {
             status: 'error',

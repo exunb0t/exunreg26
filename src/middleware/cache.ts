@@ -37,13 +37,14 @@ export function cacheMiddleware(ttlSeconds: number = 60): MiddlewareHandler<{ Bi
             return
         }
 
-        const email = getCookie(c, 'email') || ''
-        const cacheKey = `${c.req.url}:${email}`
+        const token = getCookie(c, 'auth_token') || ''
+        const cacheKey = token ? `${c.req.url}:tok:${token}` : `${c.req.url}:anon`
         const cached = responseCache.get(cacheKey)
         const now = Date.now()
 
         if (cached && cached.expiresAt > now) {
             c.header('Cache-Control', `private, max-age=${ttlSeconds}`)
+            c.header('Vary', 'Cookie')
             c.header('X-Cache', 'HIT')
             return c.text(cached.body, cached.status as any, {
                 'Content-Type': cached.contentType || 'application/json',
@@ -65,6 +66,7 @@ export function cacheMiddleware(ttlSeconds: number = 60): MiddlewareHandler<{ Bi
             evictIfNeeded(now)
 
             c.header('Cache-Control', `private, max-age=${ttlSeconds}`)
+            c.header('Vary', 'Cookie')
             c.header('X-Cache', 'MISS')
         }
     }

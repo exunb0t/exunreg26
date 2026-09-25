@@ -50,7 +50,7 @@
     "crons": ["0 */6 * * *"]
   },
   "vars": {
-    "COOKIE_SECURE": "false",
+    "COOKIE_SECURE": "true",
     "ADMIN_EMAILS": "exun@dpsrkp.net",
     "QDRANT_COLLECTION": "exunreg26-kb"
   }

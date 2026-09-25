@@ -7,8 +7,10 @@ document.addEventListener("DOMContentLoaded", async function () {
         const data = await resp.json();
         const list = Array.isArray(data) ? data : (data.sponsors || []);
         const html = list.map((s) => {
-          const href = s.link || s.Link || "#";
-          const src = s.imageUrl || s.ImageURL || s.image || "";
+          const rawHref = s.link || s.Link || "#";
+          const rawSrc = s.imageUrl || s.ImageURL || s.image || "";
+          const href = Utils.isAllowedUrl(rawHref) ? rawHref : "#";
+          const src = Utils.isAllowedUrl(rawSrc) || rawSrc.startsWith("/") ? rawSrc : "";
           const alt = s.alt || s.Alt || "Sponsor";
           const height = s.height || s.Height || "80px";
           return `<a href="${Utils.escapeHtml(href)}" target="_blank" rel="noopener noreferrer" class="sponsor-link"><img src="${Utils.escapeHtml(src)}" alt="${Utils.escapeHtml(alt)}" class="sponsor-img" data-height="${Utils.escapeHtml(height)}" loading="lazy" /></a>`;

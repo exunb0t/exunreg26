@@ -11,6 +11,7 @@ class EventsPage {
         this.setupFilters();
         this.renderEvents();
         this.setupEventListeners();
+        this.setupSummaryButton();
         this.trackFilterSlider();
         const params = new URLSearchParams(window.location.search);
         const focusId = params.get('focus');

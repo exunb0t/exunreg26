@@ -4,25 +4,11 @@ import { getEmailFromCookie } from '../middleware/auth'
 import * as queries from '../db/queries'
 import type { AppContext } from '../types'
 import { newPasswordHash } from '../lib/crypto'
-
-interface UpdateProfileBody {
-    username?: string
-    password?: string
-    schoolCode?: string
-    fullname?: string
-    phoneNumber?: string
-    principalsEmail?: string
-    individual?: boolean
-    institutionName?: string
-    address?: string
-    principalsName?: string
-}
-
-const emailRegex = /^[^@]+@[a-zA-Z]+\.[a-zA-Z]{2,}$/
+import { ADDRESS_MAX, CLASS_MAX, NAME_MAX, PHONE_REGEX, SCHOOL_MAX, TEAM_MAX, capLength, isValidEmail, isValidPhone, normalizeEmail } from '../lib/validation'
 
 export async function updateProfile(c: AppContext) {
     const email = getEmailFromCookie(c)
-    const pl = await c.req.json<UpdateProfileBody>().catch(() => null)
+    const pl = await c.req.json<Record<string, unknown>>().catch(() => null)
     if (!pl) return jsonError(c, `Invalid request body`, 400)
 
     const db = getDb(c.env)
@@ -31,16 +17,26 @@ export async function updateProfile(c: AppContext) {
 
     const patch: Record<string, unknown> = {}
 
-    if (pl.fullname !== undefined) patch.fullname = pl.fullname.trim().toUpperCase()
-    if (pl.phoneNumber !== undefined) patch.phoneNumber = pl.phoneNumber.trim()
-    if (pl.schoolCode !== undefined) patch.schoolCode = pl.schoolCode.trim()
-    if (pl.institutionName !== undefined) patch.institutionName = pl.institutionName.trim().toUpperCase()
-    if (pl.principalsName !== undefined) patch.principalsName = pl.principalsName.trim().toUpperCase()
-    if (pl.address !== undefined) patch.address = pl.address.trim().toUpperCase()
+    if (pl.fullname !== undefined) {
+        const v = capLength(String(pl.fullname ?? ''), NAME_MAX)
+        if (!v) return jsonError(c, 'Fullname cannot be empty', 400)
+        patch.fullname = v.toUpperCase()
+    }
+    if (pl.phoneNumber !== undefined) {
+        const v = String(pl.phoneNumber ?? '').trim()
+        if (v && !isValidPhone(v)) return jsonError(c, 'Invalid phone number', 400)
+        if (v.length > 32) return jsonError(c, 'Phone number too long', 400)
+        patch.phoneNumber = v
+    }
+    if (pl.schoolCode !== undefined) patch.schoolCode = capLength(String(pl.schoolCode ?? ''), SCHOOL_MAX)
+    if (pl.institutionName !== undefined) patch.institutionName = capLength(String(pl.institutionName ?? ''), SCHOOL_MAX).toUpperCase()
+    if (pl.principalsName !== undefined) patch.principalsName = capLength(String(pl.principalsName ?? ''), NAME_MAX).toUpperCase()
+    if (pl.address !== undefined) patch.address = capLength(String(pl.address ?? ''), ADDRESS_MAX).toUpperCase()
 
     if (pl.username !== undefined) {
-        const username = pl.username.trim()
+        const username = String(pl.username ?? '').trim()
         if (!username) return jsonError(c, 'Username cannot be empty', 400)
+        if (username.length > NAME_MAX) return jsonError(c, 'Username too long', 400)
         if (username !== user.username) {
             const taken = await queries.getUserByUsername(db, username)
             if (taken) return jsonError(c, 'Username is already taken', 409)
@@ -49,13 +45,17 @@ export async function updateProfile(c: AppContext) {
     }
 
     if (pl.password !== undefined) {
-        if (pl.password.length < 8) return jsonError(c, 'Password must be at least 8 characters', 400)
-        patch.passwordHash = await newPasswordHash(pl.password)
+        const pw = String(pl.password ?? '')
+        if (pw.length < 8) return jsonError(c, 'Password must be at least 8 characters', 400)
+        if (pw.length > 200) return jsonError(c, 'Password too long', 400)
+        const pepper = (c.env.AUTH_SALT ?? '').trim()
+        if (!pepper) return jsonError(c, 'Server misconfigured', 500)
+        patch.passwordHash = await newPasswordHash(pw, pepper)
     }
 
     if (pl.principalsEmail !== undefined) {
-        const principalsEmail = pl.principalsEmail.trim()
-        if (principalsEmail && !emailRegex.test(principalsEmail)) {
+        const principalsEmail = normalizeEmail(String(pl.principalsEmail ?? ''))
+        if (principalsEmail && !isValidEmail(principalsEmail)) {
             return jsonError(c, 'Invalid principals email', 400)
         }
         patch.principalsEmail = principalsEmail
@@ -63,12 +63,12 @@ export async function updateProfile(c: AppContext) {
 
     if (pl.individual !== undefined) {
         const wsIndi = user.individual
-        patch.individual = pl.individual
+        patch.individual = Boolean(pl.individual)
         if (pl.individual && !wsIndi) {
             await queries.deleteIndividualRegistrationsByUser(db, user.id)
             await queries.createIndividualRegistration(db, {
                 userId: user.id,
-                fullname: (pl.fullname ?? user.fullname) || '',
+                fullname: capLength(String(pl.fullname ?? user.fullname ?? ''), NAME_MAX) || '',
                 userEmail: email,
             })
             patch.institutionName = ""

@@ -12,7 +12,7 @@ export async function resolveGoogleDocId(url: string): Promise<string | null> {
     if (direct) return direct
 
     try {
-        const res = await fetch(url, { redirect: 'follow' })
+        const res = await fetch(url, { redirect: 'follow', signal: AbortSignal.timeout(10000) })
         const finalUrl = res.url || url
         return extractGoogleDocId(finalUrl)
     } catch {
@@ -29,7 +29,7 @@ export async function fetchGoogleDocHtml(docId: string): Promise<FetchedDoc> {
     const url = docId.startsWith('pub:')
         ? `https://docs.google.com/document/d/e/${docId.slice(4)}/pub`
         : `https://docs.google.com/document/d/${docId}/export?format=html`
-    const res = await fetch(url)
+    const res = await fetch(url, { signal: AbortSignal.timeout(30000) })
 
     if (!res.ok) {
         throw new Error(`Failed to fetch Google Doc (status ${res.status}). Make sure link sharing is set to "Anyone with the link can view".`)

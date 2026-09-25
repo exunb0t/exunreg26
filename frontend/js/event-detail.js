@@ -18,7 +18,7 @@ class EventDetailPage {
   async init() {
     if (!this.eventId) {
       Utils.showToast("Invalid event ID", "error");
-      Utils.redirect("/events", 800);
+      Utils.redirect("/events", 1800);
       return;
     }
     await this.loadEvent();
@@ -46,7 +46,7 @@ class EventDetailPage {
     } catch (error) {
       console.error("Failed to load event:", error);
       Utils.showToast("Failed to load event details", "error");
-      Utils.redirect("/events", 800);
+      Utils.redirect("/events", 1800);
     }
   }
 
@@ -204,11 +204,11 @@ class EventDetailPage {
     editor.style.marginTop = "12px";
     const rows = [];
 
-    const createRow = (p) => {
+    const createRow = (p, idx) => {
       const row = document.createElement("div");
       row.className = "inline-member-row";
       row.style.display = "grid";
-      row.style.gridTemplateColumns = "1fr 1fr 90px 130px";
+      row.style.gridTemplateColumns = "repeat(auto-fit, minmax(150px, 1fr))";
       row.style.gap = "12px";
       row.style.marginBottom = "10px";
       const nameVal = String((p && (p.name || p.fullname)) || "").replace(/"/g, "&quot;");
@@ -230,10 +230,17 @@ class EventDetailPage {
     });
 
     for (let i = 0; i < capacity; i++) {
-      const r = createRow(existingMembers[i] || {});
+      const r = createRow(existingMembers[i] || {}, i);
       rows.push(r);
       editor.appendChild(r);
     }
+
+    const headNote = document.createElement("p");
+    headNote.style.fontSize = "13px";
+    headNote.style.opacity = "0.7";
+    headNote.style.margin = "4px 0 10px";
+    headNote.textContent = capacity === 1 ? "Add the participant below." : `Add up to ${capacity} participants. Leave unused rows blank. Each row needs a name and a valid email.`;
+    editor.insertBefore(headNote, editor.firstChild);
 
     const actions = document.createElement("div");
     actions.style.marginTop = "12px";
@@ -306,14 +313,28 @@ class EventDetailPage {
     saveBtn.addEventListener("click", async (e) => {
       e.stopPropagation();
       const students = [];
-      for (const r of rows) {
+      const emailOk = (v) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v || "");
+      let failed = false;
+      rows.forEach((r, i) => {
+        if (failed) return;
         const name = (r.querySelector('[data-name="name"]').value || "").trim();
         const email = (r.querySelector('[data-name="email"]').value || "").trim();
         const cls = (r.querySelector('[data-name="class"]').value || "").trim();
         const phone = (r.querySelector('[data-name="phone"]').value || "").trim();
-        if (!name) continue;
+        if (!name && !email && !cls && !phone) return;
+        if (!name) {
+          failed = true;
+          Utils.showToast(`Row ${i + 1}: name is required`, "error");
+          return;
+        }
+        if (!emailOk(email)) {
+          failed = true;
+          Utils.showToast(`Row ${i + 1} (${name}): valid email required`, "error");
+          return;
+        }
         students.push({ fullname: name, email, class: cls, phone });
-      }
+      });
+      if (failed) return;
       if (students.length === 0) {
         Utils.showToast("Please add at least one participant", "error");
         return;
@@ -322,10 +343,10 @@ class EventDetailPage {
         const payload = { eventId: this.eventId, students };
         if (isUpdate) {
           await window.ExunServices.registrations.update(payload);
-          Utils.showToast("Registration updated", "success");
+          Utils.showToast(`Registration updated (${students.length} participant${students.length === 1 ? "" : "s"})`, "success");
         } else {
           await window.ExunServices.registrations.submit(payload);
-          Utils.showToast("Registration saved", "success");
+          Utils.showToast(`Registered ${students.length} participant${students.length === 1 ? "" : "s"}`, "success");
         }
         setTimeout(cleanup, 600);
       } catch (err) {

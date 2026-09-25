@@ -29,6 +29,40 @@ function normalizeTables(md) {
   return out.join("\n");
 }
 
+function sanitizeBrochureHtml(html) {
+  const tpl = document.createElement("template");
+  tpl.innerHTML = String(html || "");
+  const allowed = new Set(["P", "BR", "H1", "H2", "H3", "H4", "UL", "OL", "LI", "TABLE", "THEAD", "TBODY", "TR", "TH", "TD", "STRONG", "EM", "CODE", "PRE", "A", "BLOCKQUOTE", "HR", "DIV", "SPAN"]);
+  const walk = (node) => {
+    for (const child of Array.from(node.childNodes)) {
+      if (child.nodeType === 1) {
+        if (!allowed.has(child.tagName)) {
+          const frag = document.createDocumentFragment();
+          while (child.firstChild) frag.appendChild(child.firstChild);
+          node.replaceChild(frag, child);
+          walk(frag);
+          continue;
+        }
+        for (const attr of Array.from(child.attributes)) {
+          const n = attr.name.toLowerCase();
+          if (n.startsWith("on")) child.removeAttribute(attr.name);
+        }
+        if (child.tagName === "A") {
+          const href = child.getAttribute("href") || "";
+          if (!/^(https?:\/\/|\/|#)/i.test(href.trim()) || /^javascript:/i.test(href.trim()) || /^data:/i.test(href.trim())) {
+            child.removeAttribute("href");
+          }
+        }
+        walk(child);
+      } else if (child.nodeType === 8) {
+        child.remove();
+      }
+    }
+  };
+  walk(tpl.content);
+  return tpl.innerHTML;
+}
+
 document.addEventListener("DOMContentLoaded", async () => {
   if (document.body.dataset.page !== "brochure") return;
   const contentEl = document.getElementById("html-content");
@@ -40,13 +74,16 @@ document.addEventListener("DOMContentLoaded", async () => {
     md = md.replace(/\\\r?\n/g, "\n");
     md = md.replace(/^\s*-\s*$/gm, "");
     md = normalizeTables(md);
-    let html = md;
+    let html = "";
     if (window.marked) {
       if (typeof window.marked.setOptions === "function") {
         window.marked.setOptions({ gfm: true, tables: true, breaks: false });
       }
       html = window.marked.parse ? window.marked.parse(md) : window.marked(md);
+    } else if (window.Utils && typeof window.Utils.renderMarkdown === "function") {
+      html = window.Utils.renderMarkdown(md);
     }
+    html = sanitizeBrochureHtml(html);
     if (contentEl) contentEl.innerHTML = html;
     if (contentEl) {
       contentEl.querySelectorAll('a[href^="http"]').forEach((a) => {

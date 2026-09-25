@@ -261,6 +261,18 @@ export async function deletePasswordResetOtp(
         .where(eq(passwordResetOtps.email, email))
 }
 
+export async function consumePasswordResetOtp(
+    db: Db,
+    email: string,
+    otpHash: string
+): Promise<PasswordResetOtpRow | undefined> {
+    const rows = await db
+        .delete(passwordResetOtps)
+        .where(and(eq(passwordResetOtps.email, email), eq(passwordResetOtps.otpHash, otpHash)))
+        .returning()
+    return rows[0]
+}
+
 export async function updatePasswordResetOtpAttempts(
     db: Db,
     email: string,

@@ -9,6 +9,7 @@ import { jsonOk, jsonError } from '../lib/response'
 import { ensureTabs, writeTab, freezeHeaderRow } from '../lib/googleSheets'
 import { getOAuthAccessToken, listBackups, uploadBackup, deleteDriveFile } from '../lib/googleDrive'
 import { hashContent } from '../lib/googleDocs'
+import { sheetsSafeCell } from '../lib/validation'
 
 export const MAX_EXPORT_PARTICIPANTS = 8
 
@@ -20,9 +21,7 @@ interface Participant {
 }
 
 function cell(v: unknown): string {
-    if (v === null || v === undefined) return ''
-    if (typeof v === 'boolean') return v ? 'yes' : 'no'
-    return String(v)
+    return sheetsSafeCell(v)
 }
 
 function parseUserRegistrations(raw: unknown): Record<string, Participant[]> {

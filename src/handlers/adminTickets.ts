@@ -48,7 +48,7 @@ export async function replyTicket(c: AppContext) {
     if (!ticket) return jsonError(c, 'Ticket not found', 404)
 
     const payload = await c.req.json<{ message?: string }>().catch(() => null)
-    const message = payload?.message?.trim()
+    const message = payload?.message?.trim().slice(0, 5000)
 
     if (!message) return jsonError(c, 'Reply message required', 400)
 

@@ -48,11 +48,20 @@ class LoginPage {
 
   setupOTPInputs() {
     const otpInputs = document.querySelectorAll(".otp-input");
+    const maybeAutoSubmit = () => {
+      const code = Array.from(otpInputs).map((i) => i.value).join("");
+      if (code.length === otpInputs.length && /^[0-9]+$/.test(code)) {
+        const form = document.getElementById("otp-form");
+        if (form && typeof form.requestSubmit === "function") form.requestSubmit();
+      }
+    };
     otpInputs.forEach((input, index) => {
       input.addEventListener("input", (e) => {
         e.target.value = (e.target.value || "").replace(/\D/g, "").slice(0, 1);
         if (e.target.value.length === 1 && index < otpInputs.length - 1) {
           otpInputs[index + 1].focus();
+        } else {
+          maybeAutoSubmit();
         }
       });
       input.addEventListener("keydown", (e) => {
@@ -161,11 +170,7 @@ class LoginPage {
     try {
       const resp = await window.ExunServices.auth.sendOTP(this.currentEmail, true);
       const data = (resp && resp.data) || {};
-      if (data.expiresAt) {
-        try {
-          document.getElementById("otp-meta").textContent = `Code valid until ${new Date(data.expiresAt).toLocaleString()}`;
-        } catch (e) {}
-      }
+      this.startOtpCountdown(data.expiresAt);
       if (data.reused) {
         Utils.showToast("Earlier OTP still valid. No new email sent.", "info");
       } else {
@@ -181,6 +186,33 @@ class LoginPage {
     }
   }
 
+  stopOtpCountdown() {
+    if (this.otpCountdown) {
+      clearInterval(this.otpCountdown);
+      this.otpCountdown = null;
+    }
+  }
+
+  startOtpCountdown(expiresAt) {
+    this.stopOtpCountdown();
+    const meta = document.getElementById("otp-meta");
+    if (!meta) return;
+    const end = new Date(expiresAt).getTime();
+    if (!expiresAt || Number.isNaN(end)) {
+      meta.textContent = "Code valid for 10 minutes";
+      return;
+    }
+    const tick = () => {
+      const left = Math.max(0, Math.round((end - Date.now()) / 1000));
+      const m = Math.floor(left / 60);
+      const s = String(left % 60).padStart(2, "0");
+      meta.textContent = left > 0 ? `Code expires in ${m}:${s}` : "Code expired. Please resend.";
+      if (left <= 0) this.stopOtpCountdown();
+    };
+    tick();
+    this.otpCountdown = setInterval(tick, 1000);
+  }
+
   showOTPForm(data) {
     const authContainer = document.getElementById("auth-container");
     const otpContainer = document.getElementById("otp-container");
@@ -190,21 +222,14 @@ class LoginPage {
     if (emailLabel) emailLabel.textContent = this.currentEmail;
     const meta = document.getElementById("otp-meta");
     if (meta) {
-      if (data && data.expiresAt) {
-        try {
-          meta.textContent = `Code valid until ${new Date(data.expiresAt).toLocaleString()}`;
-        } catch (e) {
-          meta.textContent = "Code valid for 10 minutes";
-        }
-      } else {
-        meta.textContent = "Code valid for 10 minutes";
-      }
+      this.startOtpCountdown(data && data.expiresAt);
     }
     const first = document.querySelector(".otp-input");
     if (first) first.focus();
   }
 
   showEmailForm() {
+    this.stopOtpCountdown();
     const authContainer = document.getElementById("auth-container");
     const otpContainer = document.getElementById("otp-container");
     if (authContainer) authContainer.style.display = "block";

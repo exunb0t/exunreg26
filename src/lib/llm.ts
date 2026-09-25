@@ -13,6 +13,7 @@ async function callGroq(env: Bindings, messages: ChatMessage[]): Promise<string>
     const client = new OpenAI({
         baseURL: 'https://api.groq.com/openai/v1',
         apiKey: env.GROQ_API_KEY,
+        timeout: 10000,
     })
 
     const completion = await client.chat.completions.create({
@@ -30,6 +31,7 @@ async function callOpenRouter(env: Bindings, messages: ChatMessage[]): Promise<s
     const client = new OpenAI({
         baseURL: 'https://openrouter.ai/api/v1',
         apiKey: env.OPENROUTER_API_KEY,
+        timeout: 10000,
     })
 
     const completion = await client.chat.completions.create({
@@ -47,7 +49,8 @@ export async function getChatCompletion(env: Bindings, messages: ChatMessage[]):
     if (env.GROQ_API_KEY) {
         try {
             return await callGroq(env, messages)
-        } catch {
+        } catch (err) {
+            console.error(JSON.stringify({ provider: 'groq', message: err instanceof Error ? err.message : String(err) }))
             if (!env.OPENROUTER_API_KEY) throw new Error('Groq request failed and no OpenRouter fallback configured')
         }
     }
@@ -77,7 +80,7 @@ export async function streamChatCompletion(
     for (const p of providers) {
         let sentAny = false
         try {
-            const client = new OpenAI({ baseURL: p.baseURL, apiKey: p.apiKey })
+            const client = new OpenAI({ baseURL: p.baseURL, apiKey: p.apiKey, timeout: 15000 })
             const stream = await client.chat.completions.create({
                 model: p.model,
                 messages,

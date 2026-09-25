@@ -7,6 +7,10 @@ document.addEventListener("DOMContentLoaded", async () => {
   const messageEl = document.getElementById("message");
   const modeBtns = Array.from(document.querySelectorAll(".mode-switch__btn"));
   const state = { isIndividual: false };
+  let dirty = false;
+  const markDirty = () => { dirty = true; };
+
+  document.getElementById("complete-profile-form").addEventListener("input", markDirty);
 
   const schoolInputs = ["institution_name", "principals_name", "principals_email"]
     .map((id) => document.getElementById(id))
@@ -28,8 +32,19 @@ document.addEventListener("DOMContentLoaded", async () => {
   }
 
   modeBtns.forEach((b) => {
-    b.addEventListener("click", () => {
-      state.isIndividual = b.dataset.mode === "individual";
+    b.addEventListener("click", async () => {
+      const next = b.dataset.mode === "individual";
+      if (next && !state.isIndividual) {
+        const inst = (document.getElementById("institution_name").value || "").trim();
+        const pn = (document.getElementById("principals_name").value || "").trim();
+        const pe = (document.getElementById("principals_email").value || "").trim();
+        if (inst || pn || pe) {
+          const ok = await Utils.showConfirmModal("Switching to Individual clears your saved school, principal name and principal email. Continue?", "Switch to Individual", "Switch", "Keep editing");
+          if (!ok) return;
+        }
+      }
+      state.isIndividual = next;
+      markDirty();
       applyMode();
     });
   });
@@ -141,6 +156,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     try {
       const resp = await window.ExunServices.profile.update(payload);
       if (resp && resp.status === "success") {
+        dirty = false;
         Utils.showToast("Profile saved. Redirecting to summary...", "success");
         setTimeout(() => {
           window.location.href = "/summary";
@@ -157,9 +173,19 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   const backBtn = document.getElementById("back-to-profile");
   if (backBtn) {
-    backBtn.addEventListener("click", (e) => {
+    backBtn.addEventListener("click", async (e) => {
       e.preventDefault();
+      if (dirty) {
+        const ok = await Utils.showConfirmModal("You have unsaved changes. Leave without saving?", "Discard changes", "Discard", "Keep editing");
+        if (!ok) return;
+      }
       window.location.href = "/summary";
     });
   }
+  window.addEventListener("beforeunload", (e) => {
+    if (dirty) {
+      e.preventDefault();
+      e.returnValue = "";
+    }
+  });
 });

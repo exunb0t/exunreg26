@@ -6,6 +6,7 @@ import type { EventInsert } from '../db/queries'
 import { sendEmail } from '../lib/sendemail'
 import { clearResponseCache } from '../middleware/cache'
 import { parseLimit } from '../lib/paging'
+import { isValidEmail, normalizeEmail } from '../lib/validation'
 
 const EVENT_TEXT_FIELDS = ['name', 'image', 'eligibility', 'mode', 'dates', 'descriptionLong', 'descriptionShort'] as const
 const EVENT_BOOL_FIELDS = ['openToAll', 'independentRegistration'] as const
@@ -22,7 +23,8 @@ function pickEventFields(payload: unknown): { ok: true; data: EventInsert } | { 
     for (const field of EVENT_TEXT_FIELDS) {
         if (input[field] !== undefined) {
             if (typeof input[field] !== 'string') return { ok: false, error: `Field ${field} must be a string` }
-            data[field] = input[field]
+            if ((input[field] as string).length > 5000) return { ok: false, error: `Field ${field} is too long` }
+            data[field] = (input[field] as string).trim()
         }
     }
 
@@ -71,9 +73,9 @@ export async function getAdminConfig(c: AppContext) {
     return jsonOk(
         c,
         {
-            admin_emails: c.env.ADMIN_EMAILS
+            admin_count: String(c.env.ADMIN_EMAILS ?? '').split(',').map((s) => s.trim()).filter((s) => s.length > 0).length
         },
-        'Admin Emails'
+        'Admin Config'
     )
 }
 
@@ -392,8 +394,8 @@ export async function sendInvite(c: AppContext) {
         )
     }
 
-    const emailRegex = /^[^@]+@[a-zA-Z]+\.[a-zA-Z]{2,}$/
-    if (!emailRegex.test(payload.email)) {
+    const inviteEmail = normalizeEmail(payload.email)
+    if (!isValidEmail(inviteEmail)) {
         return jsonError(
             c,
             'Invalid email',
@@ -402,14 +404,14 @@ export async function sendInvite(c: AppContext) {
     }
 
 
-    const inviteMessage = payload.message || 'You have been invited to the portal of Exun reg platform 2026.'
-    await sendEmail(payload.email, 'Exun 2026 Registration Platform Admin Invitation', inviteMessage, c.env)
+    const inviteMessage = typeof payload.message === 'string' && payload.message.trim().length > 0 ? payload.message.trim().slice(0, 2000) : 'You have been invited to the portal of Exun reg platform 2026.'
+    await sendEmail(inviteEmail, 'Exun 2026 Registration Platform Admin Invitation', inviteMessage, c.env)
 
     return jsonOk(
         c,
         {
-            email: payload.email,
-            message: payload.message ?? ''
+            email: inviteEmail,
+            message: typeof payload.message === 'string' ? payload.message.slice(0, 2000) : ''
         },
         'Invite sent successfully!'
     )

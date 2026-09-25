@@ -76,6 +76,7 @@ function renderMarkdown(src) {
 }
 
 function showToast(message, type = "info") {
+  const holdMs = type === "error" ? 6000 : 3000;
   let stack = document.getElementById("toast-stack");
   if (!stack) {
     stack = document.createElement("div");
@@ -97,7 +98,7 @@ function showToast(message, type = "info") {
     setTimeout(() => {
       if (toast.parentNode) toast.parentNode.removeChild(toast);
     }, 300);
-  }, 3000);
+  }, holdMs);
 }
 
 function debounce(func, wait) {
@@ -123,9 +124,21 @@ function validatePhone(phone) {
 }
 
 function sanitizeHTML(str) {
-  const temp = document.createElement("div");
-  temp.textContent = str;
-  return temp.innerHTML;
+  return String(str == null ? "" : str)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
+function isAllowedUrl(url) {
+  const v = String(url || "").trim();
+  return /^(https?:\/\/|\/|#)/i.test(v) && !/^javascript:/i.test(v) && !/^data:/i.test(v);
+}
+
+function sanitizeAttr(str) {
+  return sanitizeHTML(str);
 }
 
 const MATERIAL_PATHS = {
@@ -250,13 +263,9 @@ function formatEligibility(eligibility, openToAll) {
 
 function slugify(text) {
   return String(text || "")
-    .trim()
     .toLowerCase()
-    .replace(/[:'/"?!.,]+/g, "")
-    .replace(/\s+/g, "-")
-    .replace(/[^a-z0-9-]/g, "")
-    .replace(/-+/g, "-")
-    .replace(/^-|-$/g, "");
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
 }
 
 function rememberEventBack(href) {
@@ -358,6 +367,11 @@ function showConfirmModal(message, title = "Confirm", confirmText = "Confirm", c
         cleanup();
         resolve(true);
       }
+      if (ev.key === "Tab") {
+        ev.preventDefault();
+        if (document.activeElement === cancelBtn) confirmBtn.focus();
+        else cancelBtn.focus();
+      }
     };
     cancelBtn.addEventListener("click", () => {
       cleanup();
@@ -392,6 +406,8 @@ window.Utils = {
   validateEmail,
   validatePhone,
   sanitizeHTML,
+  sanitizeAttr,
+  isAllowedUrl,
   escapeHtml,
   copyToClipboard,
   generateRandomId,

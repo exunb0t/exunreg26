@@ -6,6 +6,7 @@ import { getEmailFromCookie } from '../middleware/auth'
 import { sendEmail } from '../lib/sendemail'
 import { ticketDisplayId } from '../lib/tickets'
 import { renderTicketAdminEmail, renderTicketUserEmail } from '../lib/ticketEmail'
+import { validateTicketInput } from '../lib/validation'
 
 export const TICKET_CATEGORIES = [
     'Registration',
@@ -40,12 +41,8 @@ export async function createTicket(c: AppContext) {
     const priority = String(form.get('priority') ?? '').trim().toLowerCase()
     const message = String(form.get('message') ?? '').trim()
 
-    if (!subject) return jsonError(c, 'Subject is required', 400)
-    if (subject.length > 200) return jsonError(c, 'Subject is too long', 400)
-    if (!TICKET_CATEGORIES.includes(category)) return jsonError(c, 'Please choose a category', 400)
-    if (!PRIORITIES.includes(priority)) return jsonError(c, 'Please choose a priority', 400)
-    if (!message) return jsonError(c, 'Description is required', 400)
-    if (message.length > 2000) return jsonError(c, 'Description is too long (max 2000 characters)', 400)
+    const checked = validateTicketInput({ subject, message, category, priority })
+    if (!checked.ok) return jsonError(c, checked.error, 400)
 
     const rawFiles = form.getAll('files').filter((f): f is File => f instanceof File && f.size > 0)
     if (rawFiles.length > 0) return jsonError(c, 'File attachments are no longer accepted', 400)
@@ -54,8 +51,8 @@ export async function createTicket(c: AppContext) {
     const ticket = await queries.createTicket(db, {
         conversationId: null,
         userEmail: email,
-        subject,
-        message,
+        subject: checked.subject,
+        message: checked.message,
         category,
         priority,
         attachments: JSON.stringify(attachments),
@@ -67,10 +64,10 @@ export async function createTicket(c: AppContext) {
     const mailData = {
         displayId,
         email,
-        subject,
+        subject: checked.subject,
         category,
         priority,
-        message,
+        message: checked.message,
     }
 
     if (c.env.TICKET_NOTIFY_EMAIL) {
@@ -81,8 +78,8 @@ export async function createTicket(c: AppContext) {
                 try {
                     await sendEmail(
                         c.env.TICKET_NOTIFY_EMAIL,
-                        `New support ticket ${displayId}: ${subject}`,
-                        `From: ${email}\nCategory: ${category}\nPriority: ${priority}\n\n${message}${adminUrl ? `\n\nReply: ${adminUrl}` : ''}`,
+                        `New support ticket ${displayId}: ${checked.subject}`,
+                        `From: ${email}\nCategory: ${category}\nPriority: ${priority}\n\n${checked.message}${adminUrl ? `\n\nReply: ${adminUrl}` : ''}`,
                         c.env,
                         renderTicketAdminEmail(mailData, adminUrl)
                     )
@@ -98,8 +95,8 @@ export async function createTicket(c: AppContext) {
             try {
                 await sendEmail(
                     email,
-                    `Ticket received ${displayId}: ${subject}`,
-                    `Hi,\n\nThanks for reaching out. Our team will get back to you by email shortly.\n\nTicket: ${displayId}\nSubject: ${subject}\nCategory: ${category}\nPriority: ${priority}\n\n${message}\n\n-- Exun Clan`,
+                    `Ticket received ${displayId}: ${checked.subject}`,
+                    `Hi,\n\nThanks for reaching out. Our team will get back to you by email shortly.\n\nTicket: ${displayId}\nSubject: ${checked.subject}\nCategory: ${category}\nPriority: ${priority}\n\n${checked.message}\n\n-- Exun Clan`,
                     c.env,
                     renderTicketUserEmail(mailData)
                 )

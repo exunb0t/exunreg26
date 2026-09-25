@@ -4,8 +4,8 @@ import { getDb } from '../db/client'
 import * as queries from '../db/queries'
 import type { UserInsert } from '../db/queries'
 import { getEmailFromCookie } from '../middleware/auth'
+import { ADDRESS_MAX, NAME_MAX, SCHOOL_MAX, TEAM_MAX, capLength, isValidEmail, isValidPhone, normalizeEmail } from '../lib/validation'
 
-const emailRegex = /^[^@]+@[a-zA-Z]+\.[a-zA-Z]{2,}$/
 const MAX_STUDENTS = 25
 
 type StudentInput = {
@@ -36,11 +36,22 @@ function validateStudents(students: unknown, maxAllowed: number): { ok: true; st
     }
     for (let i = 0; i < list.length; i++) {
         const student = list[i]
-        if (!student || !student.fullname || !student.fullname.trim()) {
+        const name = capLength(String(student?.fullname ?? ''), NAME_MAX)
+        if (!student || !name) {
             return { ok: false, error: `Student at index ${i}: fullname is required` }
         }
-        if (!student.email || !emailRegex.test(student.email)) {
+        if (name.length > NAME_MAX) {
+            return { ok: false, error: `Student at index ${i}: fullname too long` }
+        }
+        const semail = normalizeEmail(student.email)
+        if (!student.email || !isValidEmail(semail)) {
             return { ok: false, error: `Student at index ${i}: valid email is required` }
+        }
+        if (student.phone !== undefined && String(student.phone).trim() && !isValidPhone(String(student.phone))) {
+            return { ok: false, error: `Student at index ${i}: invalid phone` }
+        }
+        if (student.class !== undefined && String(student.class).trim().length > 32) {
+            return { ok: false, error: `Student at index ${i}: class too long` }
         }
     }
     return { ok: true, students: list }
@@ -73,35 +84,49 @@ export async function submitRegistrations(c: AppContext) {
         return jsonError(c, checked.error, 400)
     }
     const students = checked.students
-    if (payload.principalEmail && !emailRegex.test(payload.principalEmail)) {
+    if (payload.principalEmail && !isValidEmail(normalizeEmail(payload.principalEmail))) {
         return jsonError(c, 'Invalid principal email', 400)
     }
+    if (payload.teamName !== undefined && capLength(String(payload.teamName ?? ''), TEAM_MAX).length > TEAM_MAX) {
+        return jsonError(c, 'Team name too long', 400)
+    }
+    if (payload.schoolName !== undefined && String(payload.schoolName ?? '').trim().length > SCHOOL_MAX) {
+        return jsonError(c, 'School name too long', 400)
+    }
+    if (payload.address !== undefined && String(payload.address ?? '').trim().length > ADDRESS_MAX) {
+        return jsonError(c, 'Address too long', 400)
+    }
     const accountUpdates: Partial<UserInsert> = {}
-    if (payload.schoolName !== undefined) accountUpdates.institutionName = payload.schoolName
-    if (payload.schoolCode !== undefined) accountUpdates.schoolCode = payload.schoolCode
-    if (payload.address !== undefined) accountUpdates.address = payload.address
-    if (payload.principalName !== undefined) accountUpdates.principalsName = payload.principalName
-    if (payload.principalEmail !== undefined) accountUpdates.principalsEmail = payload.principalEmail
+    if (payload.schoolName !== undefined) accountUpdates.institutionName = capLength(String(payload.schoolName ?? ''), SCHOOL_MAX)
+    if (payload.schoolCode !== undefined) accountUpdates.schoolCode = capLength(String(payload.schoolCode ?? ''), SCHOOL_MAX)
+    if (payload.address !== undefined) accountUpdates.address = capLength(String(payload.address ?? ''), ADDRESS_MAX)
+    if (payload.principalName !== undefined) accountUpdates.principalsName = capLength(String(payload.principalName ?? ''), NAME_MAX)
+    if (payload.principalEmail !== undefined) accountUpdates.principalsEmail = normalizeEmail(payload.principalEmail)
     if (Object.keys(accountUpdates).length > 0) {
         await queries.updateUser(db, email, accountUpdates)
     }
-    const registration = await queries.createRegistration(db, {
-        eventId: payload.eventId,
-        userId: user.id,
-        teamName: payload.teamName,
-        status: 'pending',
-    })
+    let registration
+    try {
+        registration = await queries.createRegistration(db, {
+            eventId: payload.eventId,
+            userId: user.id,
+            teamName: payload.teamName !== undefined ? capLength(String(payload.teamName ?? ''), TEAM_MAX) : undefined,
+            status: 'pending',
+        })
+    } catch {
+        return jsonError(c, 'Already registered for this event. Use PUT to update or DELETE to remove.', 409)
+    }
     for (const student of students) {
         await queries.createIndividualRegistration(db, {
             userId: user.id,
             eventId: payload.eventId,
-            fullname: student.fullname.trim(),
-            userEmail: student.email.trim(),
-            phoneNumber: student.phone,
-            className: student.class,
-            schoolName: payload.schoolName,
-            schoolCode: payload.schoolCode,
-            address: payload.address,
+            fullname: capLength(String(student.fullname ?? ''), NAME_MAX).trim(),
+            userEmail: normalizeEmail(student.email),
+            phoneNumber: student.phone !== undefined ? String(student.phone).trim().slice(0, 32) : undefined,
+            className: student.class !== undefined ? String(student.class).trim().slice(0, 32) : undefined,
+            schoolName: payload.schoolName !== undefined ? capLength(String(payload.schoolName ?? ''), SCHOOL_MAX) : undefined,
+            schoolCode: payload.schoolCode !== undefined ? capLength(String(payload.schoolCode ?? ''), SCHOOL_MAX) : undefined,
+            address: payload.address !== undefined ? capLength(String(payload.address ?? ''), ADDRESS_MAX) : undefined,
         })
     }
     return jsonOk(c, { registrationId: registration.id }, 'Registration submitted successfully')
@@ -134,33 +159,33 @@ export async function updateRegistration(c: AppContext) {
         return jsonError(c, checked.error, 400)
     }
     const students = checked.students
-    if (payload.principalEmail && !emailRegex.test(payload.principalEmail)) {
+    if (payload.principalEmail && !isValidEmail(normalizeEmail(payload.principalEmail))) {
         return jsonError(c, 'Invalid principal email', 400)
     }
     const accountUpdates: Partial<UserInsert> = {}
-    if (payload.schoolName !== undefined) accountUpdates.institutionName = payload.schoolName
-    if (payload.schoolCode !== undefined) accountUpdates.schoolCode = payload.schoolCode
-    if (payload.address !== undefined) accountUpdates.address = payload.address
-    if (payload.principalName !== undefined) accountUpdates.principalsName = payload.principalName
-    if (payload.principalEmail !== undefined) accountUpdates.principalsEmail = payload.principalEmail
+    if (payload.schoolName !== undefined) accountUpdates.institutionName = capLength(String(payload.schoolName ?? ''), SCHOOL_MAX)
+    if (payload.schoolCode !== undefined) accountUpdates.schoolCode = capLength(String(payload.schoolCode ?? ''), SCHOOL_MAX)
+    if (payload.address !== undefined) accountUpdates.address = capLength(String(payload.address ?? ''), ADDRESS_MAX)
+    if (payload.principalName !== undefined) accountUpdates.principalsName = capLength(String(payload.principalName ?? ''), NAME_MAX)
+    if (payload.principalEmail !== undefined) accountUpdates.principalsEmail = normalizeEmail(payload.principalEmail)
     if (Object.keys(accountUpdates).length > 0) {
         await queries.updateUser(db, email, accountUpdates)
     }
     await queries.updateRegistration(db, existing.id, {
-        teamName: payload.teamName ?? existing.teamName,
+        teamName: payload.teamName !== undefined ? capLength(String(payload.teamName ?? ''), TEAM_MAX) : existing.teamName,
     })
     await queries.deleteIndividualRegistrationsByEventUser(db, payload.eventId, user.id)
     for (const student of students) {
         await queries.createIndividualRegistration(db, {
             userId: user.id,
             eventId: payload.eventId,
-            fullname: student.fullname.trim(),
-            userEmail: student.email.trim(),
-            phoneNumber: student.phone,
-            className: student.class,
-            schoolName: payload.schoolName,
-            schoolCode: payload.schoolCode,
-            address: payload.address,
+            fullname: capLength(String(student.fullname ?? ''), NAME_MAX).trim(),
+            userEmail: normalizeEmail(student.email),
+            phoneNumber: student.phone !== undefined ? String(student.phone).trim().slice(0, 32) : undefined,
+            className: student.class !== undefined ? String(student.class).trim().slice(0, 32) : undefined,
+            schoolName: payload.schoolName !== undefined ? capLength(String(payload.schoolName ?? ''), SCHOOL_MAX) : undefined,
+            schoolCode: payload.schoolCode !== undefined ? capLength(String(payload.schoolCode ?? ''), SCHOOL_MAX) : undefined,
+            address: payload.address !== undefined ? capLength(String(payload.address ?? ''), ADDRESS_MAX) : undefined,
         })
     }
     return jsonOk(c, { registrationId: existing.id }, 'Registration updated successfully')

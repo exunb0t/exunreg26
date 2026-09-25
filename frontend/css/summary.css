@@ -643,24 +643,8 @@
   margin-top: 32px;
   padding-top: 24px;
   border-top: 1px solid rgba(56, 58, 60, 0.1);
-  justify-content: space-between;
+  justify-content: flex-end;
   align-items: center;
-}
-
-.summary-actions__left {
-  display: flex;
-  gap: 16px;
-  align-items: center;
-}
-
-.summary-actions__left #logout-btn {
-  background: #dc2626;
-  color: #fff;
-  border: none;
-}
-
-.summary-actions__left #logout-btn:hover {
-  background: #b91c1c;
 }
 
 @media (max-width: 768px) {
@@ -684,11 +668,6 @@
   }
 
   .summary-actions {
-    flex-direction: column;
-    align-items: stretch;
-  }
-
-  .summary-actions__left {
     flex-direction: column;
     align-items: stretch;
   }

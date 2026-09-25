@@ -604,7 +604,9 @@
       if (!gotToken && !gotDone) throw new Error("Error contacting server.");
     } catch (e) {
       if (thinking && thinking.isConnected) thinking.remove();
+      if (!gotDone && replyRow && replyRow.isConnected) replyRow.remove();
       if (!gotToken) addMsg("system", (e && e.message) || "Error contacting server.");
+      else Utils.showToast((e && e.message) || "Reply interrupted. Please try again.", "error");
     } finally {
       state.sending = false;
       if (els.send) els.send.disabled = !els.input.value.trim();

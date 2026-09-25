@@ -16,6 +16,33 @@ const MAX_MESSAGES_PER_CONVERSATION = 40
 const CONTEXT_MESSAGE_WINDOW = 12
 const MAX_MESSAGE_LENGTH = 4000
 const ESCALATE_MARKER = '[[ESCALATE]]'
+const ROSTER_MAX = 3000
+const CHAT_DAILY_MAX = 100
+
+const enabledCache = new Map<string, { at: number; ids: number[] }>()
+const dailyUsage = new Map<string, { day: string; count: number }>()
+
+function getExcludedIdsCached(sources: { id: number; enabled: number }[]): number[] {
+    const now = Date.now()
+    const hit = enabledCache.get('excluded')
+    if (hit && now - hit.at < 60000) return hit.ids
+    const ids = sources.filter((s) => !s.enabled).map((s) => s.id)
+    if (enabledCache.size > 100) enabledCache.clear()
+    enabledCache.set('excluded', { at: now, ids })
+    return ids
+}
+
+function chatBudgetExceeded(email: string): boolean {
+    const day = new Date().toISOString().slice(0, 10)
+    const e = dailyUsage.get(email)
+    if (!e || e.day !== day) {
+        if (dailyUsage.size > 5000) dailyUsage.clear()
+        dailyUsage.set(email, { day, count: 1 })
+        return false
+    }
+    e.count += 1
+    return e.count > CHAT_DAILY_MAX
+}
 
 interface Suggestion {
     label: string
@@ -181,14 +208,18 @@ export async function sendMessage(c: AppContext) {
         return jsonError(c, 'Message is too long', 400)
     }
 
+    if (chatBudgetExceeded(email)) {
+        return jsonError(c, 'Daily chat limit reached. Please try again tomorrow.', 429)
+    }
+
     const userMsg = await queries.createChatMessage(db, { conversationId: id, role: 'user', content: userMessage })
 
     const kbSources = await queries.getAllKbSources(db, 1000)
-    const excludedSourceIds = kbSources.filter((s) => !s.enabled).map((s) => s.id)
+    const excludedSourceIds = getExcludedIdsCached(kbSources)
     const { matches } = await retrieveContext(c.env, userMessage, excludedSourceIds)
     const events = await queries.getAllEvents(db, 1000).catch(() => [])
-    const rosterBlock = buildRosterBlock(events)
-    const contextBlock = [rosterBlock, matches.length > 0 ? buildContextBlock(matches) : ''].filter((b) => b.length > 0).join('\n\n---\n\n')
+    const fullRoster = buildRosterBlock(events).slice(0, ROSTER_MAX)
+    const contextBlock = [fullRoster, matches.length > 0 ? buildContextBlock(matches) : ''].filter((b) => b.length > 0).join('\n\n---\n\n')
 
     const history = await queries.getRecentMessages(db, id, CONTEXT_MESSAGE_WINDOW)
     const chatMessages: ChatMessage[] = [
@@ -210,7 +241,7 @@ export async function sendMessage(c: AppContext) {
     }
 
     const shouldEscalate = reply.includes(ESCALATE_MARKER)
-    const cleanReply = reply.replace(ESCALATE_MARKER, '').trim()
+    const cleanReply = reply.replaceAll(ESCALATE_MARKER, '').trim()
 
     await queries.createChatMessage(db, { conversationId: id, role: 'assistant', content: cleanReply })
 
@@ -263,7 +294,7 @@ async function streamReply(
                 send({ t }).catch(() => null)
             })
             const shouldEscalate = reply.includes(ESCALATE_MARKER)
-            const cleanReply = reply.replace(ESCALATE_MARKER, '').trim()
+            const cleanReply = reply.replaceAll(ESCALATE_MARKER, '').trim()
             await queries.createChatMessage(db, { conversationId: id, role: 'assistant', content: cleanReply })
             const newMessageCount = messageCount + 2
             const nextStatus = newMessageCount >= MAX_MESSAGES_PER_CONVERSATION ? 'full' : 'active'
@@ -279,6 +310,7 @@ async function streamReply(
             }
             const events = await queries.getAllEvents(db, 1000).catch(() => [])
             await send({
+                status: 'success',
                 done: true,
                 reply: cleanReply,
                 messageId: userMsgId,
@@ -287,7 +319,7 @@ async function streamReply(
                 conversationStatus: nextStatus,
             })
         } catch (err: any) {
-            await send({ error: err?.message ?? 'The chat assistant is temporarily unavailable. Please try again shortly.' }).catch(() => null)
+            await send({ status: 'error', error: err?.message ?? 'The chat assistant is temporarily unavailable. Please try again shortly.' }).catch(() => null)
         } finally {
             await writer.close().catch(() => null)
         }
@@ -322,7 +354,7 @@ export async function escalateConversation(c: AppContext) {
     const payload = await c.req.json<{ message?: string }>().catch(() => null)
     const messages = await queries.getMessagesByConversation(db, id, 1000)
     const lastUserMessage = [...messages].reverse().find((m) => m.role === 'user')?.content ?? 'No message provided'
-    const ticketMessage = payload?.message?.trim() || lastUserMessage
+    const ticketMessage = (payload?.message?.trim() || lastUserMessage).slice(0, 2000)
 
     const ticket = await openTicket(db, c.env, {
         conversationId: id,
