@@ -21,14 +21,15 @@ export async function exportSheetsToConfigured(db: Db, env: Bindings): Promise<v
     ])
 
     await ensureTabs(env, spreadsheetId, ['Users', 'Registrations', 'Individual'])
-    await writeTab(env, spreadsheetId, 'Users', buildUsersTable(userRows))
-    await writeTab(env, spreadsheetId, 'Registrations', buildRegistrationsTable(userRows, regRows, eventRows))
-    await writeTab(env, spreadsheetId, 'Individual', buildIndividualTable(indivRows, userRows))
+    const usersCount = await writeTab(env, spreadsheetId, 'Users', buildUsersTable(userRows))
+    const regsCount = await writeTab(env, spreadsheetId, 'Registrations', buildRegistrationsTable(userRows, regRows, eventRows, indivRows))
+    const indivCount = await writeTab(env, spreadsheetId, 'Individual', buildIndividualTable(indivRows, userRows))
     await Promise.all([
         freezeHeaderRow(env, spreadsheetId, 'Users'),
         freezeHeaderRow(env, spreadsheetId, 'Registrations'),
         freezeHeaderRow(env, spreadsheetId, 'Individual'),
     ])
+    console.log(JSON.stringify({ job: 'sheetsExport', users: usersCount, registrations: regsCount, individual: indivCount }))
 }
 
 export async function backupDatabaseToConfigured(db: Db, env: Bindings): Promise<void> {

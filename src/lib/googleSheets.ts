@@ -41,14 +41,14 @@ export async function writeTab(
     tab: string,
     values: string[][]
 ): Promise<number> {
-    const range = `'${tab}'!A1:Z`
-    await sheetsFetch(env, `${spreadsheetId}/values/${encodeURIComponent(range)}:clear`, {
+    const tabPath = encodeURIComponent(tab)
+    await sheetsFetch(env, `${spreadsheetId}/values/${tabPath}!A1:Z:clear`, {
         method: 'POST',
         body: JSON.stringify({}),
     })
     if (values.length === 0) return 0
 
-    await sheetsFetch(env, `${spreadsheetId}/values/${encodeURIComponent(`'${tab}'!A1`)}?valueInputOption=RAW`, {
+    await sheetsFetch(env, `${spreadsheetId}/values/${tabPath}!A1?valueInputOption=RAW`, {
         method: 'PUT',
         body: JSON.stringify({ values }),
     })

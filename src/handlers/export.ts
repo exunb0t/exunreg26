@@ -11,29 +11,10 @@ import { getOAuthAccessToken, listBackups, uploadBackup, deleteDriveFile } from 
 import { hashContent } from '../lib/googleDocs'
 import { sheetsSafeCell } from '../lib/validation'
 
-export const MAX_EXPORT_PARTICIPANTS = 8
-
-interface Participant {
-    name?: string
-    email?: string
-    class?: string | number
-    phone?: string | number
-}
+export const MAX_EXPORT_PARTICIPANTS = 25
 
 function cell(v: unknown): string {
     return sheetsSafeCell(v)
-}
-
-function parseUserRegistrations(raw: unknown): Record<string, Participant[]> {
-    if (!raw || typeof raw !== 'string') return {}
-    try {
-        const parsed = JSON.parse(raw)
-        if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
-            return parsed as Record<string, Participant[]>
-        }
-    } catch {
-    }
-    return {}
 }
 
 export function buildUsersTable(userRows: UserRow[]): string[][] {
@@ -59,40 +40,51 @@ export function buildUsersTable(userRows: UserRow[]): string[][] {
 export function buildRegistrationsTable(
     userRows: UserRow[],
     regRows: RegistrationRow[],
-    eventRows: EventRow[]
+    eventRows: EventRow[],
+    indivRows: IndividualRegistrationRow[]
 ): string[][] {
+    const eventsById = new Map(eventRows.map((e) => [String(e.id), e.name ?? String(e.id)]))
+    const userById = new Map(userRows.map((u) => [u.id, u]))
+    const membersByUserEvent = new Map<string, IndividualRegistrationRow[]>()
+    for (const m of indivRows) {
+        const key = `${m.userId}:${m.eventId ?? ''}`
+        const list = membersByUserEvent.get(key) ?? []
+        list.push(m)
+        membersByUserEvent.set(key, list)
+    }
+
+    let width = 1
+    for (const r of regRows) {
+        const n = (membersByUserEvent.get(`${r.userId}:${r.eventId}`) ?? []).length
+        if (n > width) width = n
+    }
+    width = Math.min(width, MAX_EXPORT_PARTICIPANTS)
+
     const header = ['username', 'email', 'fullname', 'institution', 'event_id', 'event_name', 'team_name', 'status', 'registered_at']
-    for (let i = 1; i <= MAX_EXPORT_PARTICIPANTS; i++) {
+    for (let i = 1; i <= width; i++) {
         header.push(`p${i}_name`, `p${i}_email`, `p${i}_class`, `p${i}_phone`)
     }
 
-    const eventsById = new Map(eventRows.map((e) => [String(e.id), e.name ?? String(e.id)]))
-    const teamByUserEvent = new Map(regRows.map((r) => [`${r.userId}:${r.eventId}`, r]))
-
     const out: string[][] = [header]
-    for (const u of userRows) {
-        const regs = parseUserRegistrations(u.registrations)
-        for (const [eventId, parts] of Object.entries(regs)) {
-            const list = Array.isArray(parts) ? parts : []
-            if (list.length === 0) continue
-            const team = teamByUserEvent.get(`${u.id}:${eventId}`)
-            const row = [
-                cell(u.username),
-                cell(u.email),
-                cell(u.fullname),
-                cell(u.institutionName),
-                cell(eventId),
-                cell(eventsById.get(String(eventId)) ?? eventId),
-                cell(team?.teamName),
-                cell(team?.status),
-                cell(team?.createdAt),
-            ]
-            for (let i = 0; i < MAX_EXPORT_PARTICIPANTS; i++) {
-                const p = list[i]
-                row.push(cell(p?.name), cell(p?.email), cell(p?.class), cell(p?.phone))
-            }
-            out.push(row)
+    for (const r of regRows) {
+        const u = userById.get(r.userId)
+        const parts = membersByUserEvent.get(`${r.userId}:${r.eventId}`) ?? []
+        const row = [
+            cell(u?.username),
+            cell(u?.email),
+            cell(u?.fullname),
+            cell(u?.institutionName),
+            cell(r.eventId),
+            cell(eventsById.get(String(r.eventId)) ?? r.eventId),
+            cell(r.teamName),
+            cell(r.status),
+            cell(r.createdAt),
+        ]
+        for (let i = 0; i < width; i++) {
+            const p = parts[i]
+            row.push(cell(p?.fullname), cell(p?.userEmail), cell(p?.className), cell(p?.phoneNumber))
         }
+        out.push(row)
     }
     return out
 }
@@ -140,7 +132,7 @@ export async function exportSheets(c: AppContext) {
         ])
 
         const usersTable = buildUsersTable(userRows)
-        const regsTable = buildRegistrationsTable(userRows, regRows, eventRows)
+        const regsTable = buildRegistrationsTable(userRows, regRows, eventRows, indivRows)
         const indivTable = buildIndividualTable(indivRows, userRows)
 
         await ensureTabs(c.env, spreadsheetId, ['Users', 'Registrations', 'Individual'])
