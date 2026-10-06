@@ -71,7 +71,7 @@ a {
   transition: color 0.3s ease;
 }
 
-a:hover {
+a:not(.btn):hover {
   color: var(--exun-blue);
 }
 

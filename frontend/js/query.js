@@ -214,15 +214,24 @@ document.addEventListener('DOMContentLoaded', function () {
     const box = document.getElementById('tickets-container');
     if (!section || !box) return;
     let session = { authenticated: false };
+    let sessionKnown = true;
     try {
       session = await window.ExunServices.api.getSession();
-    } catch (e) {}
+    } catch (e) {
+      sessionKnown = false;
+    }
+    const cta = document.querySelector('.ticket-cta-section');
     if (!session.authenticated) {
-      const prompt = document.createElement('p');
-      prompt.className = 'ticket-card__noreply';
+      if (sessionKnown && cta) cta.style.display = 'none';
+      const prompt = document.createElement('div');
+      prompt.className = 'ticket-login-prompt';
+      const text = document.createElement('p');
+      text.textContent = 'Want to track your support tickets?';
       const link = document.createElement('a');
       link.href = '/login';
+      link.className = 'btn btn--primary';
       link.textContent = 'Log in to view your tickets';
+      prompt.appendChild(text);
       prompt.appendChild(link);
       box.innerHTML = '';
       box.appendChild(prompt);
