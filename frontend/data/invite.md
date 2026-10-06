@@ -1,7 +1,7 @@
 # **Invite**
 
 You can always return to this page to have a quick recap on the event, and how it works.\
-If your school did not get an official email yet, please submit your school's email to exun\@dpsrkp.net along with the school name for the Official Invitation for the Exun 2026.
+If your school did not get an official email yet, please submit your school's email to **<exun@dpsrkp.net>** along with the school name for the Official Invitation for the Exun 2026.
 
 ## **Exun Clan**
 
