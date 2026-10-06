@@ -243,6 +243,7 @@
   font-size: 16px;
   line-height: 1.7;
   padding: 0 26px;
+  text-align: justify;
 }
 .faq-item--open .faq-answer {
   padding-bottom: 22px;

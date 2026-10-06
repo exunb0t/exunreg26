@@ -358,3 +358,17 @@ input[type="number"] {
 .btn-view-details:active {
   transform: scale(0.98) !important;
 }
+img {
+  -webkit-user-drag: none;
+  user-drag: none;
+
+  /* Optional: Prevents the blue highlight/selection box around the image */
+  -webkit-user-select: none; /* Safari */
+  -moz-user-select: none;    /* Firefox */
+  -ms-user-select: none;     /* IE10+/Early Edge */
+  user-select: none;         /* Standard */
+}
+a {
+  -webkit-user-drag: none;
+}
+

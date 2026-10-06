@@ -131,6 +131,7 @@
     line-height: 1.75;
     color: #33373b;
     font-size: 16.5px;
+    text-align: justify;
 }
 
 .brochure-markdown > *:first-child {

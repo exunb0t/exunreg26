@@ -162,19 +162,19 @@
     .events-page__content {
         padding: 0 20px;
     }
-    
+
     .events-page__title {
         font-size: 36px;
     }
-    
+
     .events-page__subtitle {
         font-size: 16px;
     }
-    
+
     .events-page__filters {
         gap: 12px;
     }
-    
+
     .filter-btn {
         padding: 10px 18px;
         font-size: 14px;
@@ -195,7 +195,7 @@
     .events-page__title {
         font-size: 28px;
     }
-    
+
     .events-page__grid {
         gap: 20px;
     }

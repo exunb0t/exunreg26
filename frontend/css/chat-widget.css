@@ -83,6 +83,78 @@
   display: none;
 }
 
+#exw-backdrop[hidden] {
+  display: none;
+}
+
+#exw-backdrop {
+  display: none;
+}
+
+#exw-popup,
+#exw-popup * {
+  box-sizing: border-box;
+}
+
+.exw-thread__msgs,
+.exw-list__items {
+  min-width: 0;
+  overflow-x: hidden;
+  overscroll-behavior: contain;
+}
+
+.exw-msg {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.exw-msg .bubble {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.exw-msg .bubble p,
+.exw-msg .bubble ul,
+.exw-msg .bubble ol,
+.exw-msg .bubble li {
+  max-width: 100%;
+  overflow-wrap: anywhere;
+}
+
+.exw-msg.bot .bubble code,
+.exw-msg.bot .bubble a {
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.exw-edit {
+  min-width: 0;
+}
+
+.exw-edit textarea {
+  box-sizing: border-box;
+  max-width: 100%;
+}
+
+.exw-suggest {
+  max-width: 100%;
+}
+
+.exw-suggest__chip {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.exw-convo {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.exw-thread__input {
+  min-width: 0;
+}
+
 .exw-list {
   width: 100%;
   min-width: 0;
@@ -665,21 +737,69 @@
     bottom: 14px;
   }
 
+  body.exw-no-scroll {
+    overflow: hidden;
+  }
+
+  #exw-backdrop:not([hidden]) {
+    display: block;
+    position: fixed;
+    inset: 0;
+    background: rgba(244, 245, 247, 0.55);
+    -webkit-backdrop-filter: blur(14px) saturate(1.25);
+    backdrop-filter: blur(14px) saturate(1.25);
+    z-index: 10000;
+    cursor: pointer;
+  }
+
   #exw-popup {
-    right: 14px;
-    bottom: 14px;
-    width: calc(100vw - 28px);
-    height: calc(100vh - 110px);
-    height: calc(100dvh - 110px);
+    left: 12px;
+    right: 12px;
+    bottom: calc(12px + env(safe-area-inset-bottom));
+    width: auto;
+    max-width: none;
+    height: min(640px, calc(100vh - 140px));
+    height: min(640px, calc(100dvh - 140px));
+    max-height: calc(100vh - 140px);
+    max-height: calc(100dvh - 140px);
+    z-index: 10001;
+    border-radius: 18px;
+  }
+
+  #exw-popup.minimized {
+    left: auto;
+    width: auto;
+    max-width: calc(100vw - 24px);
   }
 
   #exw-popup.zoomed {
-    width: calc(100vw - 28px);
-    height: calc(100vh - 110px);
-    height: calc(100dvh - 110px);
+    left: 12px;
+    right: 12px;
+    width: auto;
+    max-width: none;
+    height: calc(100vh - 140px);
+    height: calc(100dvh - 140px);
+    max-height: calc(100vh - 140px);
+    max-height: calc(100dvh - 140px);
   }
 
   .exw-toggle__label {
     display: none;
+  }
+
+  .exw-msg .bubble {
+    max-width: 85%;
+  }
+
+  .exw-thread__msgs {
+    padding: 14px 12px;
+  }
+
+  .exw-thread__input {
+    padding: 10px 10px calc(10px + env(safe-area-inset-bottom));
+  }
+
+  .exw-login {
+    padding: 24px 20px;
   }
 }

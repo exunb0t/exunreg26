@@ -3,36 +3,33 @@
 You can always return to this page to have a quick recap on the event, and how it works.\
 If your school did not get an official email yet, please submit your school's email to exun\@dpsrkp.net along with the school name for the Official Invitation for the Exun 2026.
 
-
 ## **Exun Clan**
 
 Founded in 1992, Exun Clan is the Computer Science and technology club of Delhi Public School, R.K. Puram, and the premier student-run STEM club in the country. Our motto, "We, not I", emphasizes our dedication to the principles of teamwork, sharing knowledge, and the spirit of collaboration.
 
 For the past couple of decades, we have set the bar for technology competitions in India with new and exciting additions each year and then surpassed it ourselves, striving to continuously improve the symposium, club and ourselves. Examples include Exun Talks, our Girls in Tech initiative, and novel event concepts.
 
-
 ## **Introduction to the Exun 2026 Symposium**
 
-Exun 2026 is our 30th annual international technology symposium hosted by high school students, which will be held during Exun Week during November 14th-22nd 2025. Preliminary/Online rounds for some events will be held between 14th November and 19th November. Every year, STEM enthusiasts from India and beyond arrive at our symposium, both battling it out and coming together to have some of the most memorable and impactful experiences of their lives, deeply engaging with and celebrating the essence of technology on the way.
+Exun 2026 is our 31st annual international technology symposium hosted by high school students, which will be held during Exun Week during October 21st-28th 2026. Preliminary/Online rounds for some events will be held between 21st October and 28th October. Every year, STEM enthusiasts from India and beyond arrive at our symposium, both battling it out and coming together to have some of the most memorable and impactful experiences of their lives, deeply engaging with and celebrating the essence of technology on the way.
 
 So, who should participate in Exun 2026? If you are someone, or know someone, who enjoys problem solving, loves expressing themselves digitally, has an interest in science and technology or simply wants to learn and explore, we can guarantee you’ll find plenty of quality opportunities, all in one place. Are you excited yet? We hope you are and we will gladly be looking forward to having you at our symposium! But wait, there is more you should know!
 
-
 ## **Events**
 
-- We have 20 events in disciplines like creative fields such as Web & App development to 2D & 3D Design (Build), to technical fields like Machine Learning (ExML), Computational Linguistics (Turing Test), and Competitive Programming (CP).
+- We have 21 events in disciplines like creative fields such as Web & App development to 2D & 3D Design (Build), to technical fields like Machine Learning (ExML), Computational Linguistics (Turing Test), and Competitive Programming (CP).
 
 - Are you interested in some other kinds of events as well? With our wide array of options, we've got you covered! We have the Girls in Tech event, where participants will learn a new technical skill through workshops and then participate in a contest. We also have the Quiz, Crossword, and Surprise events for the inquisitive.
 
 - We have also teamed up with three other clubs in our school to offer you a chance to show off your skillset: DomainSquare+, the Gaming society of our school; Roboknights, the robotics club and CubXL, the cubing club.
 
-- Please check our [**Events**](https://reg.exunclan.com/events) page for details of the full spectrum of events Exun 2026 has to offer. Most events will have preliminary rounds which will be conducted prior to the offline days. (More details can be found at [**exun.co/25/schedule**](https://exun.co/25/schedule)) while other events will fully happen onsite on November 9-10, so be sure to check that out!
+- Please check our [**Events**](https://reg.exunclan.com/events) page for details of the full spectrum of events Exun 2026 has to offer. Most events will have preliminary rounds which will be conducted prior to the offline days. (More details can be found at [**exun.co/26/schedule**](https://exun.co/26/schedule)) while other events will fully happen onsite on October 9-10, so be sure to check that out!
 
 ## **Communication**
 
-- All communication will be done through [**WhatsApp**](https://exun.co/25/whatsapp)
+- All communication will be done through [**WhatsApp**](https://exun.co/26/whatsapp)
 
-- Additionally, if you have any queries you may also write a mail to **exun@dpsrkp.net** or fill out [**exun.co/25/queries**](https://exun.co/25/queries)
+- Additionally, if you have any queries you may also write a mail to **<exun@dpsrkp.net>** or fill out [**exun.co/26/queries**](https://exun.co/26/queries)
 
 ## **Prizes & Overall Trophy**
 
@@ -40,11 +37,9 @@ So, who should participate in Exun 2026? If you are someone, or know someone, wh
 
 We have different prizes available for teams (individual or multiple participants) who win 1st, 2nd, and 3rd places, along with special prizes like gift cards.
 
-
 ### **Overall Trophy**
 
 Podium points from each win will contribute towards a school’s overall points tally for Exun 2026 (further details on breakdown are given on our Events page). The school with the most points will win the coveted Exun 2026 Overall, and be awarded our specially-designed Exun 2026 Overall Trophy!
-
 
 ## **Sudocrypt v15.0**
 
@@ -52,21 +47,19 @@ Exun Clan’s flagship event of the year, we present Sudocrypt 15.0 this year, o
 
 However, first, what is a "cryptic hunt"? To put it simply: Cryptic hunts are the online equivalent of treasure hunts and require you to hunt the internet for clues to solve questions. For more information, you can check out [**this**](https://exun.co/resources/cryptic) resource.
 
-
 ## **Dates:**
 
 Be sure to mark your calendars for Exun 2026!
 
 |                                   |
 | --------------------------------- | ---------------------------------- |
-| Last date for Online registration | 19th November 2025\*                |
-| Online Events and Prelims         | 14th November to 19th November, 2025 |
-| Onsite Events                     | 22nd November, 2025        |
+| Last date for Online registration | 28th October 2026\*                |
+| Online Events and Prelims         | 21st October to 28th October, 2026 |
+| Onsite Events                     | 31st October, 2026        |
 | Onsite Events Timings             | 9AM - 3:30PM                          |
 | Onsite Events Reporting Time      | 8:30AM                             |
 
-**\*:** For events with an online preliminary round, registrations end 12 hours before the submission deadline. See the schedule at [**exun.co/25/schedule**](https://exun.co/25/schedule)
-
+**\*:** For events with an online preliminary round, registrations end 12 hours before the submission deadline. See the schedule at [**exun.co/26/schedule**](https://exun.co/26/schedule)
 
 ## **Independent vs School Participation**
 
@@ -78,18 +71,17 @@ Points won by teams and individuals under school participation will be counted t
 
 Participants can be part of both school and independent participation teams, as long as the teams do not participate in the same event.
 
-
 ## **Registration, Queries, and Links**
 
-Registration can be done at [**reg.exunclan.com**](https://reg.exunclan.com/). Only a single representative needs to register on behalf of a team (if independent) and school (if participating with your school), where they will have to verify their emails and be verified by us to be legitimate participants. 
+Registration can be done at [**reg.exunclan.com**](https://reg.exunclan.com/). Only a single representative needs to register on behalf of a team (if independent) and school (if participating with your school), where they will have to verify their emails and be verified by us to be legitimate participants.
 
 Teams can be edited by the representative on the website itself by clicking on the "Registration Panel" button on the event details page.
 
-For any queries you may contact us at **exun@dpsrkp.net**
+For any queries you may contact us at **<exun@dpsrkp.net>**
 
 Participants are strongly encouraged to complete registration at the earliest, as they must be registered before the respective deadlines to participate in events with preliminary rounds.
 
-You may also use the following links to receive announcements and connect with us or ask us any questions at: 
+You may also use the following links to receive announcements and connect with us or ask us any questions at:
 
 - [**Facebook**](https://facebook.com/ExunClan)
 
@@ -98,7 +90,6 @@ You may also use the following links to receive announcements and connect with u
 - [**Instagram**](https://instagram.com/exunclan)
 
 You are welcome to mail us any time at <exun@dpsrkp.net>
-
 
 # **Rules & Regulations**
 
@@ -116,12 +107,11 @@ You are welcome to mail us any time at <exun@dpsrkp.net>
 
 - It will not be possible for us to provide accommodation or travel reimbursement for schools.
 
-
 ## **Registration Rules**
 
-- Online registration shall remain open till 6nd November 2025, 11:59PM IST for events without preliminary rounds, and close 12 hours before the preliminary rounds end for events which have one.
+- Online registration shall remain open till 28th October 2026, 11:59PM IST for events without preliminary rounds, and close 12 hours before the preliminary rounds end for events which have one.
 
-- The preliminary rounds’ deadline will differ so be sure to check respective deadlines at [**exun.co/25/schedule**](https://exun.co/25/schedule)**.** Teams will not be allowed to edit their participants’ names after the preliminary round under any circumstances.
+- The preliminary rounds’ deadline will differ so be sure to check respective deadlines at [**exun.co/26/schedule**](https://exun.co/26/schedule)**.** Teams will not be allowed to edit their participants’ names after the preliminary round under any circumstances.
 
 - School Registration: Schools can register their teams on [**reg.exunclan.com**](https://reg.exunclan.com/). They are also eligible to win the overall prize.
 
@@ -137,7 +127,6 @@ You are welcome to mail us any time at <exun@dpsrkp.net>
 
 - Any changes in the invite will be marked with \*\*.
 
-
 ## **Accompanying teacher / coach**
 
 - The participating school team must be accompanied by a teacher.
@@ -145,7 +134,6 @@ You are welcome to mail us any time at <exun@dpsrkp.net>
 - They will be responsible for the conduct of the school team.
 
 - They will ensure that the school team attends the Opening and Closing Ceremonies with the decorum that the event demands.
-
 
 ## **Prizes & Overall Trophy Rules**
 
@@ -161,5 +149,4 @@ You are welcome to mail us any time at <exun@dpsrkp.net>
 
 # **Event Data**
 
-Please head over to [**exun.co/25/events**](https://exun.co/25/events) for further details about each events and points.
-
+Please head over to [**exun.co/26/events**](https://exun.co/26/events) for further details about each events and points.

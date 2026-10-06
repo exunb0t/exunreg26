@@ -30,6 +30,24 @@
     }
   }
 
+  function isMobileView() {
+    try {
+      return window.matchMedia("(max-width: 720px)").matches;
+    } catch (e) {
+      return window.innerWidth <= 720;
+    }
+  }
+
+  function syncBackdrop() {
+    if (!els.backdrop || !els.popup) return;
+    const minimized = els.popup.classList.contains("minimized");
+    const shouldShow = state.open && !els.popup.hidden && isMobileView() && !minimized;
+    els.backdrop.hidden = !shouldShow;
+    try {
+      document.body.classList.toggle("exw-no-scroll", shouldShow);
+    } catch (e) {}
+  }
+
   async function restoreUi() {
     const saved = readUi();
     if (!saved || !saved.open || !els.popup || !els.toggle) return;
@@ -48,6 +66,7 @@
     }
     if (!state.authed) {
       els.popup.classList.add("logged-out");
+      syncBackdrop();
       return;
     }
     els.popup.classList.remove("logged-out");
@@ -71,6 +90,7 @@
     els.popup.classList.toggle("minimized", !!saved.minimized);
     els.popup.classList.toggle("zoomed", !!saved.zoomed);
     saveUi();
+    syncBackdrop();
   }
 
   function hueFor(s) {
@@ -676,6 +696,7 @@
     }
     if (!state.authed) {
       if (els.popup) els.popup.classList.add("logged-out");
+      syncBackdrop();
       return;
     }
     if (els.popup) els.popup.classList.remove("logged-out");
@@ -686,12 +707,17 @@
       els.popup.classList.remove("show-thread");
     }
     saveUi();
+    syncBackdrop();
   }
 
   function closeWidget() {
     state.open = false;
     saveUi();
     if (els.popup) els.popup.hidden = true;
+    if (els.backdrop) els.backdrop.hidden = true;
+    try {
+      document.body.classList.remove("exw-no-scroll");
+    } catch (e) {}
     if (els.toggle) {
       els.toggle.setAttribute("aria-expanded", "false");
       els.toggle.hidden = false;
@@ -722,6 +748,7 @@
     if (!state.authed) {
       els.popup.classList.add("logged-out");
       Utils.showToast("Login to ask Exunb0t", "info");
+      syncBackdrop();
       return;
     }
     els.popup.classList.remove("logged-out");
@@ -738,6 +765,7 @@
       await sendMessage(t);
     }
     saveUi();
+    syncBackdrop();
   }
 
   window.ExunChat = {
@@ -761,6 +789,7 @@
     const toggleMin = () => {
       if (els.popup) els.popup.classList.toggle("minimized");
       saveUi();
+      syncBackdrop();
     };
     const toggleMax = () => {
       if (els.popup) {
@@ -768,6 +797,7 @@
         els.popup.classList.toggle("zoomed");
       }
       saveUi();
+      syncBackdrop();
     };
     if (els.minBtn) els.minBtn.addEventListener("click", toggleMin);
     if (els.lMin) els.lMin.addEventListener("click", toggleMin);
@@ -799,14 +829,19 @@
         });
       }
     }
+    if (els.backdrop) els.backdrop.addEventListener("click", closeWidget);
   document.addEventListener("keydown", (e) => {
     if (e.key === "Escape" && state.open) closeWidget();
+  });
+  window.addEventListener("resize", () => {
+    if (state.open) syncBackdrop();
   });
   window.addEventListener("beforeunload", () => saveUi());
   }
 
   function cacheEls() {
     els.toggle = document.getElementById("exw-toggle");
+    els.backdrop = document.getElementById("exw-backdrop");
     els.popup = document.getElementById("exw-popup");
     els.items = document.querySelector("#exw-popup .exw-list__items");
     els.msgs = document.querySelector("#exw-popup .exw-thread__msgs");
