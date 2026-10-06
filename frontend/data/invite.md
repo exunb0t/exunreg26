@@ -41,7 +41,7 @@ We have different prizes available for teams (individual or multiple participant
 
 Podium points from each win will contribute towards a school’s overall points tally for Exun 2026 (further details on breakdown are given on our Events page). The school with the most points will win the coveted Exun 2026 Overall, and be awarded our specially-designed Exun 2026 Overall Trophy!
 
-## **Sudocrypt v15.0**
+## **Sudocrypt v16.0**
 
 Exun Clan’s flagship event of the year, we present Sudocrypt 15.0 this year, our annual international cryptic hunt. With thousands of participants and an exciting new system of game mechanics each year, levels are rewarding and sometimes challenging. Keep a lookout for the announcement and format for this year’s hunt (to be out soon)!
 
@@ -55,9 +55,9 @@ Be sure to mark your calendars for Exun 2026!
 | --------------------------------- | ---------------------------------- |
 | Last date for Online registration | 28th October 2026\*                |
 | Online Events and Prelims         | 21st October to 28th October, 2026 |
-| Onsite Events                     | 31st October, 2026        |
-| Onsite Events Timings             | 9AM - 3:30PM                          |
-| Onsite Events Reporting Time      | 8:30AM                             |
+| Onsite Events                     | 31st October, 2026                 |
+| Onsite Events Timings             | 8:30AM - 3:00PM                    |
+| Onsite Events Reporting Time      | 8:00AM                             |
 
 **\*:** For events with an online preliminary round, registrations end 12 hours before the submission deadline. See the schedule at [**exun.co/26/schedule**](https://exun.co/26/schedule)
 
@@ -65,7 +65,7 @@ Be sure to mark your calendars for Exun 2026!
 
 Participants can either represent their respective schools (counted as "school participation"), or represent a team or go themselves for an event without affiliation to any school (counted as "independent participation") with a customized team name.
 
-Independent participation will only be allowed for events that will be completely online, i.e., Sudocrypt v15.0, ExML, Turing Test, Build: Unreality and Competitive Programming Prelims.
+Independent participation will only be allowed for events that will be completely online, i.e., Sudocrypt v16.0, ExML, Turing Test, Build: Unreality and Competitive Programming Prelims.
 
 Points won by teams and individuals under school participation will be counted towards their overall total points tally. Points will not be passed down to the nearest school team if independent participation takes place.
 
