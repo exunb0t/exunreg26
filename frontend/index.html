@@ -39,7 +39,7 @@
 
           <p class="hero__description">
             Exun 2026, a plethora of events and a profusion of memories, awaits
-            you. The 30th iteration of Exun Clan's annual international
+            you. The 31st iteration of Exun Clan's annual international
             technology symposium is being organized with preliminary rounds and
             final events. Building from the success of previous years with
             participants from India and across the globe, we hope Exun 2026
@@ -58,8 +58,8 @@
           <p class="hero__notice">
             The registrations for Exun 2026 are
             <a href="/summary">open</a>. Please email
-            <a href="mailto:exun@dpsrkp.net">exun@dpsrkp.net</a> for
-            further queries or check out our <a href="/query">queries</a> page.
+            <a href="mailto:exun@dpsrkp.net">exun@dpsrkp.net</a> for further
+            queries or check out our <a href="/query">queries</a> page.
           </p>
         </div>
       </section>
@@ -87,8 +87,14 @@
     <script>
       document.addEventListener("DOMContentLoaded", async function () {
         try {
-          await Utils.loadComponent("/components/navbar.html", document.getElementById("navbar-container"));
-          await Utils.loadComponent("/components/footer.html", document.getElementById("footer-container"));
+          await Utils.loadComponent(
+            "/components/navbar.html",
+            document.getElementById("navbar-container"),
+          );
+          await Utils.loadComponent(
+            "/components/footer.html",
+            document.getElementById("footer-container"),
+          );
         } catch (e) {}
       });
     </script>

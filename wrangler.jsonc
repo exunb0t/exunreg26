@@ -40,12 +40,18 @@
     {
       "binding": "DB",
       "database_name": "exunreg26",
-      "database_id": "00000000-0000-0000-0000-000000000000"
+      "database_id": "862a3793-af1d-48fd-bad0-10fa135228dc"
     }
   ],
   "ai": {
     "binding": "AI"
   },
+  "routes": [
+    {
+      "pattern": "reg.exunclan.com/*",
+      "zone_name": "exunclan.com"
+    }
+  ],
   "triggers": {
     "crons": ["0 */6 * * *"]
   },

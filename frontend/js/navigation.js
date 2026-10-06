@@ -6,9 +6,9 @@ class Navigation {
 
   async init() {
     const authContainer = document.querySelector('[data-nav="auth"]');
-    if (authContainer && !authContainer.textContent.trim()) {
-      authContainer.innerHTML = `<span class="navbar__link navbar__link--loading" aria-hidden="true">…</span>`;
-    }
+        if (authContainer && !authContainer.textContent.trim()) {
+            authContainer.innerHTML = `<span class="navbar__link navbar__link--loading" data-nav-loading aria-hidden="true">…</span>`;
+        }
     this.setupEventListeners();
     await this.loadUserState();
     this.updateNavigation();
@@ -38,11 +38,11 @@ class Navigation {
       }
       links += `<button class="btn btn--primary navbar__link" data-action="logout">Logout</button>`;
       authContainer.innerHTML = links;
-    } else {
-      if (!authContainer.textContent.trim()) {
-        authContainer.innerHTML = `<button class="btn btn--primary navbar__link" data-action="login">Login</button>`;
-      }
-    }
+        } else {
+            if (!authContainer.textContent.trim() || authContainer.querySelector('[data-nav-loading]')) {
+                authContainer.innerHTML = `<button class="btn btn--primary navbar__link" data-action="login">Login</button>`;
+            }
+        }
   }
 
   updateActiveLink() {
