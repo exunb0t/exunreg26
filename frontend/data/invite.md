@@ -43,7 +43,7 @@ Podium points from each win will contribute towards a school’s overall points 
 
 ## **Sudocrypt v16.0**
 
-Exun Clan’s flagship event of the year, we present Sudocrypt 15.0 this year, our annual international cryptic hunt. With thousands of participants and an exciting new system of game mechanics each year, levels are rewarding and sometimes challenging. Keep a lookout for the announcement and format for this year’s hunt (to be out soon)!
+Exun Clan’s flagship event of the year, we present Sudocrypt v16.0 this year, our annual international CTF x Cryptic Hunt. With thousands of participants and an exciting new system of game mechanics each year, levels are rewarding and sometimes challenging. Keep a lookout for the announcement and format for this year’s challenge at [**sudocrypt.com**](https://sudocrypt.com)!
 
 However, first, what is a "cryptic hunt"? To put it simply: Cryptic hunts are the online equivalent of treasure hunts and require you to hunt the internet for clues to solve questions. For more information, you can check out [**this**](https://exun.co/resources/cryptic) resource.
 
