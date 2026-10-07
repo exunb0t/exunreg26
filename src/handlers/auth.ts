@@ -1,12 +1,11 @@
 import type { AppContext } from '../types'
 import { jsonOk, jsonError } from '../lib/response'
-import { deleteCookie, getCookie } from 'hono/cookie'
 import { getDb } from '../db/client'
 import * as queries from '../db/queries'
-import { generateAuthToken, generateOtp6, hashOtp, hashSessionToken, verifyOtpHash } from '../lib/crypto'
-import { authCookieOpts, setAuthCookies } from '../lib/cookies'
+import { generateAuthToken, generateOtp6, hashOtp, hashSessionToken } from '../lib/crypto'
+import { clearAuthCookies, getAuthTokenCookie, setAuthCookies } from '../lib/cookies'
 import { getEmailFromCookie, isAuthenticated } from '../middleware/auth'
-import { isAdminEmail } from '../lib/admin'
+import { isAdmin } from '../lib/admin'
 import { sendEmail } from '../lib/sendemail'
 import { renderOtpEmail } from '../lib/otpEmail'
 import { isValidEmail, normalizeEmail, redactEmail } from '../lib/validation'
@@ -17,17 +16,23 @@ const SESSION_TTL_S = 30 * 24 * 60 * 60
 
 export async function logout(c: AppContext) {
     const db = getDb(c.env)
-    const authToken = getCookie(c, 'auth_token')
+    const authToken = getAuthTokenCookie(c)
     const pepper = (c.env.AUTH_SALT ?? '').trim()
     if (authToken && pepper) {
         const hashed = await hashSessionToken(authToken, pepper)
         await queries.deleteSession(db, hashed)
-        await queries.deleteSession(db, authToken)
     }
-    const clearOpts = { ...authCookieOpts(c, 0), maxAge: 0 }
-    deleteCookie(c, 'email', { path: clearOpts.path, secure: clearOpts.secure, sameSite: clearOpts.sameSite, httpOnly: clearOpts.httpOnly })
-    deleteCookie(c, 'auth_token', { path: clearOpts.path, secure: clearOpts.secure, sameSite: clearOpts.sameSite, httpOnly: clearOpts.httpOnly })
+    clearAuthCookies(c)
     return jsonOk(c, null, 'Logged out')
+}
+
+export async function logoutAll(c: AppContext) {
+    const db = getDb(c.env)
+    const email = getEmailFromCookie(c)
+    if (!email) return jsonError(c, 'Authentication required', 401)
+    await queries.deleteSessionsByEmail(db, email)
+    clearAuthCookies(c)
+    return jsonOk(c, null, 'Logged out everywhere')
 }
 
 export async function getSession(c: AppContext) {
@@ -36,7 +41,8 @@ export async function getSession(c: AppContext) {
         return jsonOk(c, { authenticated: false, email: null, isAdmin: false }, 'No active session')
     }
     const email = getEmailFromCookie(c)
-    return jsonOk(c, { authenticated: true, email, isAdmin: isAdminEmail(email, c.env) }, 'Active session')
+    const db = getDb(c.env)
+    return jsonOk(c, { authenticated: true, email, isAdmin: await isAdmin(db, email, c.env) }, 'Active session')
 }
 
 export async function sendOTP(c: AppContext) {
@@ -56,8 +62,7 @@ export async function sendOTP(c: AppContext) {
     if (existingOtp) {
         const exp = new Date(existingOtp.expiresAt).getTime()
         if (Number.isFinite(exp) && exp > now && !forceResend) {
-            const existingUser = await queries.getUserByEmail(db, email)
-            return jsonOk(c, { email, reused: true, expiresAt: existingOtp.expiresAt, isNewUser: !existingUser }, 'OTP already sent. Please check your email.')
+            return jsonOk(c, { email, reused: true, expiresAt: existingOtp.expiresAt }, 'If the address is valid, an OTP was sent. Please check your email.')
         }
     }
     const today = new Date().toISOString().slice(0, 10)
@@ -71,7 +76,6 @@ export async function sendOTP(c: AppContext) {
     const otp = generateOtp6()
     const otpHash = await hashOtp(email, otp, pepper)
     const expiresAt = new Date(now + OTP_TTL_MS).toISOString()
-    const existingUser = await queries.getUserByEmail(db, email)
     try {
         await sendEmail(email, 'Exun 2026 Login OTP', `Your Exun 2026 login OTP is ${otp}. It is valid for 10 minutes.`, c.env, renderOtpEmail(otp))
     } catch (err) {
@@ -97,7 +101,7 @@ export async function sendOTP(c: AppContext) {
             attemptCount: 0,
         })
     }
-    return jsonOk(c, { email, reused: false, expiresAt, isNewUser: !existingUser }, existingUser ? 'OTP sent. Welcome back.' : 'OTP sent. A new account will be created on verification.')
+    return jsonOk(c, { email, reused: false, expiresAt }, 'If the address is valid, an OTP was sent.')
 }
 
 export async function verifyOTP(c: AppContext) {
@@ -124,20 +128,15 @@ export async function verifyOTP(c: AppContext) {
     const candidateHash = await hashOtp(email, otp, pepper)
     const consumed = await queries.consumePasswordResetOtp(db, email, candidateHash)
     if (!consumed) {
-        const legacyOk = await verifyOtpHash(email, otp, storedOtp.otpHash, pepper)
-        if (!legacyOk) {
-            const newAttemptCount = storedOtp.attemptCount + 1
-            if (newAttemptCount >= 10) {
-                await queries.deletePasswordResetOtp(db, email)
-                return jsonError(c, 'Too many incorrect OTP attempts. Please request a new OTP.', 429)
-            }
-            await queries.updatePasswordResetOtpAttempts(db, email, newAttemptCount)
-            return jsonError(c, `Invalid OTP. ${10 - newAttemptCount} attempts remaining.`, 401)
+        const newAttemptCount = storedOtp.attemptCount + 1
+        if (newAttemptCount >= 10) {
+            await queries.deletePasswordResetOtp(db, email)
+            return jsonError(c, 'Too many incorrect OTP attempts. Please request a new OTP.', 429)
         }
-        await queries.deletePasswordResetOtp(db, email)
+        await queries.updatePasswordResetOtpAttempts(db, email, newAttemptCount)
+        return jsonError(c, 'Invalid OTP.', 401)
     }
     let user = await queries.getUserByEmail(db, email)
-    const isNewUser = !user
     if (!user) {
         try {
             user = await queries.createUser(db, { email, username: email })
@@ -150,6 +149,6 @@ export async function verifyOTP(c: AppContext) {
     const hashed = await hashSessionToken(authToken, pepper)
     await queries.createSession(db, email, hashed, new Date(Date.now() + SESSION_TTL_MS).toISOString())
     setAuthCookies(c, email, authToken, SESSION_TTL_S)
-    return jsonOk(c, { email, isNewUser }, isNewUser ? 'Account created. Welcome to Exun 2026.' : 'Login successful. Welcome back.')
+    return jsonOk(c, { email }, 'Login successful.')
 }
 

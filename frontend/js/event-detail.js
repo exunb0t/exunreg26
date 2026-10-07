@@ -194,6 +194,8 @@ class EventDetailPage {
     overlay.tabIndex = -1;
     const modal = document.createElement("div");
     modal.className = "modal-box";
+    modal.setAttribute("role", "dialog");
+    modal.setAttribute("aria-modal", "true");
     const title = document.createElement("h3");
     title.textContent = `${isUpdate ? "Update" : "Register for"} ${this.event.name || ""}`;
     title.style.marginTop = "0";
@@ -211,10 +213,10 @@ class EventDetailPage {
       row.style.gridTemplateColumns = "repeat(auto-fit, minmax(150px, 1fr))";
       row.style.gap = "12px";
       row.style.marginBottom = "10px";
-      const nameVal = String((p && (p.name || p.fullname)) || "").replace(/"/g, "&quot;");
-      const emailVal = String((p && p.email) || "").replace(/"/g, "&quot;");
-      const classVal = String((p && p.class) || "").replace(/"/g, "&quot;");
-      const phoneVal = String((p && p.phone) || "").replace(/"/g, "&quot;");
+      const nameVal = Utils.escapeHtml(String((p && (p.name || p.fullname)) || ""));
+      const emailVal = Utils.escapeHtml(String((p && p.email) || ""));
+      const classVal = Utils.escapeHtml(String((p && p.class) || ""));
+      const phoneVal = Utils.escapeHtml(String((p && p.phone) || ""));
       row.innerHTML = `
         <input class="form-input" data-name="name" placeholder="Full name" value="${nameVal}" autocomplete="off" readonly />
         <input class="form-input" data-name="email" placeholder="Email" value="${emailVal}" autocomplete="off" readonly />

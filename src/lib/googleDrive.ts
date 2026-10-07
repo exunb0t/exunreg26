@@ -1,13 +1,13 @@
 import type { Bindings } from '../types'
 import type { Db } from '../db/client'
 import * as queries from '../db/queries'
-import { decryptSecret, encryptSecret } from './tokenCrypto'
+import { decryptSecret, encryptSecret, tokenPepper } from './tokenCrypto'
 
 export async function getOAuthAccessToken(db: Db, env: Bindings): Promise<string> {
     const token = await queries.getOAuthToken(db, 'google_drive')
     if (!token) throw new Error('Google account not connected')
 
-    const salt = (env.AUTH_SALT ?? '').trim()
+    const salt = tokenPepper(env)
     if (!salt) throw new Error('Server misconfigured')
     let accessToken: string
     try {

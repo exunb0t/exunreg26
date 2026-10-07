@@ -14,7 +14,7 @@ export const users = sqliteTable('users', {
   institutionName: text('institution_name'),
   address: text('address'),
   principalsName: text('principals_name'),
-  registrations: text('registrations').notNull().default('{}'),
+  role: text('role').notNull().default('user'),
   createdAt: text('created_at').notNull().default(sql`CURRENT_TIMESTAMP`),
   updatedAt: text('updated_at').notNull().default(sql`CURRENT_TIMESTAMP`),
 })
@@ -98,34 +98,6 @@ export const oauthTokens = sqliteTable('oauth_tokens', {
   expiresAt: text('expires_at'),
   updatedAt: text('updated_at').notNull().default(sql`CURRENT_TIMESTAMP`),
 })
-
-function participantCols(n: number) {
-  return {
-    [`p${n}Name`]: text(`p${n}_name`),
-    [`p${n}Email`]: text(`p${n}_email`),
-    [`p${n}Class`]: text(`p${n}_class`),
-    [`p${n}Phone`]: text(`p${n}_phone`),
-  }
-}
-
-export const usrRegs = sqliteTable('usr_regs', {
-  id: integer('id').primaryKey({ autoIncrement: true }),
-  username: text('username'),
-  institution: text('institution'),
-  eventId: text('event_id'),
-  ...participantCols(1),
-  ...participantCols(2),
-  ...participantCols(3),
-  ...participantCols(4),
-  ...participantCols(5),
-  ...participantCols(6),
-  ...participantCols(7),
-  ...participantCols(8),
-  createdAt: text('created_at').notNull().default(sql`CURRENT_TIMESTAMP`),
-  updatedAt: text('updated_at').notNull().default(sql`CURRENT_TIMESTAMP`),
-}, (t) => ({
-  usernameEventIdx: uniqueIndex('idx_usr_regs_username_event').on(t.username, t.eventId),
-}))
 
 export const authSessions = sqliteTable('auth_sessions', {
   id: integer('id').primaryKey({ autoIncrement: true }),
@@ -287,6 +259,12 @@ export const ticketReplies = sqliteTable('ticket_replies', {
 }, (t) => ({
     ticketIdx: index('idx_ticket_replies_ticket').on(t.ticketId),
 }))
+
+export const rateCounters = sqliteTable('rate_counters', {
+  key: text('key').primaryKey(),
+  count: integer('count').notNull().default(1),
+  updatedAt: text('updated_at').notNull().default(sql`CURRENT_TIMESTAMP`),
+})
 
 export const queries = sqliteTable('queries', {
     id: integer('id').primaryKey({ autoIncrement: true }),

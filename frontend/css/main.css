@@ -71,7 +71,7 @@ a {
   transition: color 0.3s ease;
 }
 
-a:not(.btn):hover {
+a:not(.btn):not(.ticket-cta):hover {
   color: var(--exun-blue);
 }
 

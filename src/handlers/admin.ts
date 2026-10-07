@@ -2,7 +2,8 @@ import type { AppContext } from '../types'
 import { jsonOk, jsonError } from '../lib/response'
 import { getDb } from '../db/client'
 import * as queries from '../db/queries'
-import type { EventInsert } from '../db/queries'
+import type { EventInsert, EventRow } from '../db/queries'
+import { events } from '../db/schema'
 import { sendEmail } from '../lib/sendemail'
 import { clearResponseCache } from '../middleware/cache'
 import { parseLimit } from '../lib/paging'
@@ -257,11 +258,6 @@ export async function deleteEvent(c: AppContext) {
         id
     )
 
-    await queries.deleteUsrRegsByEvent(
-        db,
-        id
-    )
-
     await queries.deleteEvent(
         db,
         id
@@ -474,15 +470,14 @@ export async function importEvents(c: AppContext) {
         pending.push({ id: event.id, data: picked.data })
     }
 
-    for (const event of pending) {
-
-        const created =
-            await queries.createEvent(
-                db,
-                { ...event.data, id: event.id }
-            )
-
-        createdEvents.push(created)
+    const dbRows = await db.batch(
+        pending.map((event) =>
+            db.insert(events).values({ ...event.data, id: event.id }).returning()
+        ) as [any, ...any[]]
+    )
+    for (const rows of dbRows) {
+        const created = (rows as unknown as EventRow[])[0]
+        if (created) createdEvents.push(created)
     }
 
     clearResponseCache()

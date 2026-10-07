@@ -4,6 +4,7 @@ function esc(s: unknown): string {
         .replace(/</g, '&lt;')
         .replace(/>/g, '&gt;')
         .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;')
 }
 
 function priorityBadge(priority: string): string {

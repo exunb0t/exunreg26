@@ -28,6 +28,7 @@ export interface Bindings {
 
     OPENROUTER_API_KEY: string;
     GROQ_API_KEY: string;
+    OAUTH_PEPPER?: string;
 
     TICKET_NOTIFY_EMAIL: string
     GOOGLE_DOC_URLS: string
@@ -43,6 +44,7 @@ export interface Bindings {
     API_RATE_LIMITER?: RateLimitBinding
     AUTH_RATE_LIMITER?: RateLimitBinding
     CHAT_RATE_LIMITER?: RateLimitBinding
+    ADMIN_RATE_LIMITER?: RateLimitBinding
 }
 
 export type AppContext = Context<any>

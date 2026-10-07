@@ -81,6 +81,8 @@ function showToast(message, type = "info") {
   if (!stack) {
     stack = document.createElement("div");
     stack.id = "toast-stack";
+    stack.setAttribute("role", "status");
+    stack.setAttribute("aria-live", "polite");
     document.body.appendChild(stack);
   }
   while (stack.children.length >= 4) {
@@ -323,6 +325,9 @@ function showConfirmModal(message, title = "Confirm", confirmText = "Confirm", c
     box.style.width = "92%";
     box.style.boxShadow = "0 20px 60px rgba(2,6,23,0.2)";
     box.style.fontFamily = "'Outfit', sans-serif";
+    box.setAttribute("role", "dialog");
+    box.setAttribute("aria-modal", "true");
+    box.setAttribute("aria-label", title || "Confirm");
     const titleEl = document.createElement("div");
     titleEl.style.fontSize = "16px";
     titleEl.style.fontWeight = "700";

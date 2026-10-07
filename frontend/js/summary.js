@@ -229,7 +229,7 @@ class SummaryPage {
     const n = idx == null ? "" : ` ${idx + 1}`;
     const row = document.createElement("div");
     row.className = "reg-edit-row";
-    const esc = (v) => String(v == null ? "" : v).replace(/"/g, "&quot;");
+    const esc = (v) => Utils.escapeHtml(v == null ? "" : String(v));
     row.innerHTML = `
       <input class="form-input" data-f="name" placeholder="Full name${n}" autocomplete="off" readonly value="${esc(m.name)}" />
       <input class="form-input" data-f="email" placeholder="Email${n}" autocomplete="off" readonly value="${esc(m.email)}" />

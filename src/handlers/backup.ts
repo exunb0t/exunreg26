@@ -1,15 +1,15 @@
-import { setCookie, getCookie, deleteCookie } from 'hono/cookie'
 import type { AppContext } from '../types'
 import { getDb } from '../db/client'
 import { upsertOAuthToken } from '../db/queries'
 import { jsonOk, jsonError } from '../lib/response'
-import { authCookieOpts } from '../lib/cookies'
-import { encryptSecret } from '../lib/tokenCrypto'
+import { clearStateCookie, getStateCookie, setStateCookie } from '../lib/cookies'
+import { encryptSecret, tokenPepper } from '../lib/tokenCrypto'
 
 const DRIVE_SCOPE = 'https://www.googleapis.com/auth/drive.file'
-const STATE_COOKIE = 'oauth_state'
 
 function redirectUri(c: AppContext) {
+    const base = (c.env.PUBLIC_URL ?? '').trim().replace(/\/$/, '')
+    if (base) return `${base}/oauth2callback`
     return new URL('/oauth2callback', c.req.url).toString()
 }
 
@@ -20,7 +20,7 @@ export async function startOAuth2(c: AppContext) {
     }
 
     const state = crypto.randomUUID()
-    setCookie(c, STATE_COOKIE, state, authCookieOpts(c, 300))
+    setStateCookie(c, state, 300)
 
     const url = new URL('https://accounts.google.com/o/oauth2/v2/auth')
     url.searchParams.set('client_id', clientId)
@@ -37,10 +37,9 @@ export async function startOAuth2(c: AppContext) {
 export async function handleOAuth2Callback(c: AppContext) {
     const code = c.req.query('code')
     const state = c.req.query('state')
-    const expectedState = getCookie(c, STATE_COOKIE)
+    const expectedState = getStateCookie(c)
 
-    const clearOpts = authCookieOpts(c, 0)
-    deleteCookie(c, STATE_COOKIE, { path: clearOpts.path, secure: clearOpts.secure, sameSite: clearOpts.sameSite, httpOnly: clearOpts.httpOnly })
+    clearStateCookie(c)
 
     if (!state || !expectedState || state !== expectedState) {
         return jsonError(c, 'state mismatch', 400)
@@ -54,7 +53,7 @@ export async function handleOAuth2Callback(c: AppContext) {
     if (!clientId || !clientSecret) {
         return jsonError(c, 'Google OAuth credentials not configured', 500)
     }
-    const pepper = (c.env.AUTH_SALT ?? '').trim()
+    const pepper = tokenPepper(c.env)
     if (!pepper) {
         return jsonError(c, 'Server misconfigured', 500)
     }

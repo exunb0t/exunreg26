@@ -65,16 +65,27 @@ class AdminPage {
     }
 
     setupEventListeners() {
-        document.querySelectorAll('.admin-tab').forEach(tab => {
+        const tabs = document.querySelectorAll('.admin-tab');
+        const list = tabs.length > 0 ? tabs[0].parentElement : null;
+        if (list) list.setAttribute('role', 'tablist');
+        tabs.forEach(tab => {
+            tab.setAttribute('role', 'tab');
             tab.addEventListener('click', () => this.switchTab(tab.dataset.tab));
+        });
+        this.syncTabA11y();
+    }
+
+    syncTabA11y() {
+        document.querySelectorAll('.admin-tab').forEach(tab => {
+            const active = tab.dataset.tab === this.currentTab;
+            tab.classList.toggle('admin-tab--active', active);
+            tab.setAttribute('aria-selected', String(active));
         });
     }
 
     switchTab(tabName) {
         this.currentTab = tabName;
-        document.querySelectorAll('.admin-tab').forEach(tab => {
-            tab.classList.toggle('admin-tab--active', tab.dataset.tab === tabName);
-        });
+        this.syncTabA11y();
         this.renderCurrentTab();
     }
 

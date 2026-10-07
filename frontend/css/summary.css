@@ -473,7 +473,7 @@
 }
 
 .reg-edit {
-  padding-top: 16px;
+  padding: 16px 6px 24px;
   margin-top: 16px;
   border-top: 1px solid rgba(15, 23, 42, 0.1);
 }

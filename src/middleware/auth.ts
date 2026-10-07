@@ -1,6 +1,5 @@
 import { createMiddleware } from 'hono/factory'
-import { getCookie } from 'hono/cookie'
-import { isAdminEmail } from '../lib/admin'
+import { isAdmin } from '../lib/admin'
 import type { Context } from 'hono'
 
 import type { Bindings, ApiResponse } from '../types'
@@ -8,10 +7,13 @@ import { getDb } from '../db/client'
 import * as queries from '../db/queries'
 import { hashSessionToken } from '../lib/crypto'
 import { normalizeEmail } from '../lib/validation'
+import { getAuthTokenCookie, getEmailCookie } from '../lib/cookies'
+
+const ADMIN_SESSION_TTL_MS = 12 * 60 * 60 * 1000
 
 
 export function getEmailFromCookie(c: Context<{ Bindings: Bindings }>): string {
-    return normalizeEmail(getCookie(c, 'email') ?? '')
+    return normalizeEmail(getEmailCookie(c) ?? '')
 }
 
 function getPepper(c: Context<{ Bindings: Bindings }>): string {
@@ -24,13 +26,19 @@ function isExpired(expiresAt: string): boolean {
     return t < Date.now()
 }
 
+function isAdminExpired(createdAt: string): boolean {
+    const t = new Date(createdAt).getTime()
+    if (!Number.isFinite(t)) return true
+    return Date.now() - t > ADMIN_SESSION_TTL_MS
+}
+
 
 export async function isAuthenticated(
     c: Context<{ Bindings: Bindings }>
 ): Promise<boolean> {
 
     const email = getEmailFromCookie(c)
-    const token = getCookie(c, 'auth_token')
+    const token = getAuthTokenCookie(c)
 
     if (!email || !token) {
         return false
@@ -49,39 +57,30 @@ export async function isAuthenticated(
         hashed
     )
 
-    if (session) {
-        if (isExpired(session.expiresAt)) {
-            await queries.deleteSession(
-                db,
-                hashed
-            )
+    if (!session) {
+        return false
+    }
 
+    if (isExpired(session.expiresAt)) {
+        await queries.deleteSession(
+            db,
+            hashed
+        )
+
+        return false
+    }
+
+    if (normalizeEmail(session.email) !== email) {
+        return false
+    }
+
+    if (await isAdmin(db, email, c.env)) {
+        if (isAdminExpired(session.createdAt)) {
+            await queries.deleteSession(db, hashed)
             return false
         }
-
-        return normalizeEmail(session.email) === email
     }
 
-    const legacy = await queries.getSessionByToken(db, token)
-    if (!legacy) {
-        return false
-    }
-    if (isExpired(legacy.expiresAt)) {
-        await queries.deleteSession(db, token)
-        return false
-    }
-    if (normalizeEmail(legacy.email) !== email) {
-        return false
-    }
-    try {
-        await queries.deleteSession(db, token)
-        await queries.createSession(db, legacy.email, hashed, legacy.expiresAt)
-    } catch {
-        const retry = await queries.getSessionByToken(db, hashed)
-        if (!retry) return false
-        if (isExpired(retry.expiresAt)) return false
-        return normalizeEmail(retry.email) === email
-    }
     return true
 }
 
@@ -126,7 +125,8 @@ export const adminRequired = createMiddleware<{ Bindings: Bindings}>(
         }
 
         const email = getEmailFromCookie(c)
-        if (!isAdminEmail(email, c.env)) {
+        const db = getDb(c.env)
+        if (!(await isAdmin(db, email, c.env))) {
             const body: ApiResponse = {
                 status: 'error',
                 error: 'Not admin'

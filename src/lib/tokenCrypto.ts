@@ -1,3 +1,11 @@
+import type { Bindings } from '../types'
+
+export function tokenPepper(env: Bindings): string {
+    const dedicated = (env.OAUTH_PEPPER ?? '').trim()
+    if (dedicated) return dedicated
+    return (env.AUTH_SALT ?? '').trim()
+}
+
 async function getLegacyEncKey(salt: string): Promise<CryptoKey> {
     const raw = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(`token-enc:${salt}`))
     return crypto.subtle.importKey('raw', raw, { name: 'AES-GCM', length: 256 }, false, ['encrypt', 'decrypt'])

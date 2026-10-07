@@ -25,6 +25,8 @@ export interface FetchedDoc {
     title: string
 }
 
+const MAX_DOC_BYTES = 3 * 1024 * 1024
+
 export async function fetchGoogleDocHtml(docId: string): Promise<FetchedDoc> {
     const url = docId.startsWith('pub:')
         ? `https://docs.google.com/document/d/e/${docId.slice(4)}/pub`
@@ -35,7 +37,19 @@ export async function fetchGoogleDocHtml(docId: string): Promise<FetchedDoc> {
         throw new Error(`Failed to fetch Google Doc (status ${res.status}). Make sure link sharing is set to "Anyone with the link can view".`)
     }
 
+    const contentType = res.headers.get('content-type') ?? ''
+    if (!contentType.includes('html')) {
+        throw new Error(`Unexpected Google Doc content type: ${contentType || 'unknown'}`)
+    }
+    const length = Number(res.headers.get('content-length') ?? 0)
+    if (Number.isFinite(length) && length > MAX_DOC_BYTES) {
+        throw new Error('Google Doc is too large to sync')
+    }
+
     const html = await res.text()
+    if (html.length > MAX_DOC_BYTES) {
+        throw new Error('Google Doc is too large to sync')
+    }
     const titleMatch = html.match(/<title>(.*?)<\/title>/i)
     const title = titleMatch ? titleMatch[1].replace(/&amp;/g, '&').replace(/&#39;/g, "'").replace(/&quot;/g, '"') : docId
 
@@ -43,9 +57,13 @@ export async function fetchGoogleDocHtml(docId: string): Promise<FetchedDoc> {
 }
 
 export function googleDocHtmlToMarkdown(html: string): string {
-    return NodeHtmlMarkdown.translate(html, {
+    const markdown = NodeHtmlMarkdown.translate(html, {
         ignore: ['style', 'script'],
     })
+    if (markdown.trim().length < 200) {
+        throw new Error('Google Doc converted to almost no text; refusing to sync')
+    }
+    return markdown
 }
 
 export async function hashContent(content: string): Promise<string> {

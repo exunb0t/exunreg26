@@ -18,7 +18,12 @@ document.addEventListener("DOMContentLoaded", async () => {
   const schoolGroups = [instField, princField, princEmailField].filter(Boolean);
 
   function applyMode() {
-    modeBtns.forEach((b) => b.classList.toggle("active", (b.dataset.mode === "individual") === state.isIndividual));
+    modeBtns.forEach((b) => {
+      const active = (b.dataset.mode === "individual") === state.isIndividual;
+      b.classList.toggle("active", active);
+      b.setAttribute("role", "radio");
+      b.setAttribute("aria-checked", String(active));
+    });
     schoolInputs.forEach((el) => {
       el.disabled = state.isIndividual;
     });
@@ -59,7 +64,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         separateDialCode: true,
         preferredCountries: ["in", "us", "gb", "ae"],
         initialCountry: "in",
-        utilsScript: "https://cdnjs.cloudflare.com/ajax/libs/intl-tel-input/17.0.8/js/utils.js"
+        utilsScript: "/js/vendor/intlTelUtils.js"
       });
     }
   } catch (e) {

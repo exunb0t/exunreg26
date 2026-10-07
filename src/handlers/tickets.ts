@@ -18,12 +18,6 @@ export const TICKET_CATEGORIES = [
 
 const PRIORITIES = ['low', 'medium', 'high']
 
-export async function nextTicket(c: AppContext) {
-    const db = getDb(c.env)
-    const maxId = await queries.getMaxTicketId(db)
-    return jsonOk(c, { displayId: ticketDisplayId(maxId + 1) }, 'Next ticket id')
-}
-
 export async function createTicket(c: AppContext) {
     const db = getDb(c.env)
     const email = getEmailFromCookie(c)

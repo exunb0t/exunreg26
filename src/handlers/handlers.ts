@@ -5,39 +5,16 @@ import type { EventRow } from '../db/queries'
 import { newPasswordHash, verifyPassword, isLegacyPasswordHash, isV3PasswordHash, generateAuthToken, hashSessionToken } from '../lib/crypto'
 import { setAuthCookies } from '../lib/cookies'
 import { slugify } from '../lib/slug'
-import { isAdminEmail } from '../lib/admin'
+import { isAdmin } from '../lib/admin'
 import { jsonOk, jsonError } from '../lib/response'
 import { getAuthenticatedEmail, getEmailFromCookie } from '../middleware/auth'
 import type { UserInsert } from '../db/queries'
 import { verifyOTP } from './auth'
 import { isValidEmail, normalizeEmail } from '../lib/validation'
+import { quarterHourBucket } from '../lib/rateStore'
 
 const SESSION_TTL_MS = 30 * 24 * 60 * 60 * 1000
 const SESSION_TTL_S = 30 * 24 * 60 * 60
-
-const loginFailures = new Map<string, { count: number; resetAt: number }>()
-function loginLocked(email: string): boolean {
-    const e = loginFailures.get(email)
-    if (!e) return false
-    if (Date.now() > e.resetAt) {
-        loginFailures.delete(email)
-        return false
-    }
-    return e.count >= 10
-}
-function recordLoginFailure(email: string) {
-    const now = Date.now()
-    const e = loginFailures.get(email)
-    if (!e || now > e.resetAt) {
-        if (loginFailures.size > 2000) loginFailures.clear()
-        loginFailures.set(email, { count: 1, resetAt: now + 15 * 60 * 1000 })
-    } else {
-        e.count += 1
-    }
-}
-function clearLoginFailures(email: string) {
-    loginFailures.delete(email)
-}
 
 export async function healthCheck(c: AppContext) {
     const started = Date.now()
@@ -100,25 +77,25 @@ export async function login(c: AppContext) {
     if (!payload?.password) {
         return jsonError(c, 'Password or OTP required', 400)
     }
-    if (loginLocked(email)) {
+    const failKey = `login-fail:${email}:${quarterHourBucket()}`
+    const db = getDb(c.env)
+    if ((await queries.getRateCount(db, failKey)) >= 10) {
         return jsonError(c, 'Too many login attempts. Try again later.', 429)
     }
     const pepper = (c.env.AUTH_SALT ?? '').trim()
     if (!pepper) {
         return jsonError(c, 'Server misconfigured', 500)
     }
-    const db = getDb(c.env)
     const user = await queries.getUserByEmail(db, email)
     if (!user || !user.passwordHash) {
-        recordLoginFailure(email)
+        await queries.bumpRateCounter(db, failKey)
         return jsonError(c, 'Invalid email or password', 401)
     }
     const valid = await verifyPassword(payload.password, user.passwordHash, pepper)
     if (!valid) {
-        recordLoginFailure(email)
+        await queries.bumpRateCounter(db, failKey)
         return jsonError(c, 'Invalid email or password', 401)
     }
-    clearLoginFailures(email)
     if (isLegacyPasswordHash(user.passwordHash) || !isV3PasswordHash(user.passwordHash)) {
         await queries.updateUser(db, email, { passwordHash: await newPasswordHash(payload.password, pepper) })
     }
@@ -181,7 +158,7 @@ function toEventPayload(ev: EventRow, registrationCount?: number) {
 export async function getAllEvents(c: AppContext) {
     const email = await getAuthenticatedEmail(c)
     const db = getDb(c.env)
-    const eventsList = email && isAdminEmail(email, c.env) ? await getAllEventsData(db, 500) : await getAllEventsForUser(db, email, 500)
+    const eventsList = email && (await isAdmin(db, email, c.env)) ? await getAllEventsData(db, 500) : await getAllEventsForUser(db, email, 500)
     const regCounts = await queries.getRegistrationCountsByEvent(db)
     const data = eventsList.map((ev) => toEventPayload(ev, regCounts.get(ev.id) ?? 0))
     return jsonOk(c, data, 'Events retrieved successfully')

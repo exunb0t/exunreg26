@@ -54,13 +54,13 @@
           <form class="login-form" id="otp-form" autocomplete="off">
             <div class="form-group">
               <label class="form-label">Enter OTP</label>
-              <div class="otp-container">
-                <input type="text" class="otp-input" maxlength="1" inputmode="numeric" autocomplete="one-time-code" />
-                <input type="text" class="otp-input" maxlength="1" inputmode="numeric" autocomplete="off" />
-                <input type="text" class="otp-input" maxlength="1" inputmode="numeric" autocomplete="off" />
-                <input type="text" class="otp-input" maxlength="1" inputmode="numeric" autocomplete="off" />
-                <input type="text" class="otp-input" maxlength="1" inputmode="numeric" autocomplete="off" />
-                <input type="text" class="otp-input" maxlength="1" inputmode="numeric" autocomplete="off" />
+              <div class="otp-container" role="group" aria-label="6-digit one-time code">
+                <input type="text" class="otp-input" maxlength="1" inputmode="numeric" autocomplete="one-time-code" aria-label="Digit 1" />
+                <input type="text" class="otp-input" maxlength="1" inputmode="numeric" autocomplete="off" aria-label="Digit 2" />
+                <input type="text" class="otp-input" maxlength="1" inputmode="numeric" autocomplete="off" aria-label="Digit 3" />
+                <input type="text" class="otp-input" maxlength="1" inputmode="numeric" autocomplete="off" aria-label="Digit 4" />
+                <input type="text" class="otp-input" maxlength="1" inputmode="numeric" autocomplete="off" aria-label="Digit 5" />
+                <input type="text" class="otp-input" maxlength="1" inputmode="numeric" autocomplete="off" aria-label="Digit 6" />
               </div>
             </div>
             <button type="submit" class="login-btn">Verify OTP</button>

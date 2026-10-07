@@ -23,7 +23,7 @@ So, who should participate in Exun 2026? If you are someone, or know someone, wh
 
 - We have also teamed up with three other clubs in our school to offer you a chance to show off your skillset: DomainSquare+, the Gaming society of our school; Roboknights, the robotics club and CubXL, the cubing club.
 
-- Please check our [**Events**](https://reg.exunclan.com/events) page for details of the full spectrum of events Exun 2026 has to offer. Most events will have preliminary rounds which will be conducted prior to the offline days. (More details can be found at [**exun.co/26/schedule**](https://exun.co/26/schedule)) while other events will fully happen onsite on October 9-10, so be sure to check that out!
+- Please check our [**Events**](https://reg.exunclan.com/events) page for details of the full spectrum of events Exun 2026 has to offer. Most events will have preliminary rounds which will be conducted prior to the offline days. (More details can be found at [**exun.co/26/schedule**](https://exun.co/26/schedule)) while other events will fully happen onsite on October 31st, so be sure to check that out!
 
 ## **Communication**
 

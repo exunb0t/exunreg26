@@ -9,7 +9,7 @@ interface RateLimitEntry {
 
 const store: Record<string, RateLimitEntry> = {}
 
-type RateLimiterBindingName = 'API_RATE_LIMITER' | 'AUTH_RATE_LIMITER' | 'CHAT_RATE_LIMITER'
+type RateLimiterBindingName = 'API_RATE_LIMITER' | 'AUTH_RATE_LIMITER' | 'CHAT_RATE_LIMITER' | 'ADMIN_RATE_LIMITER'
 
 export function rateLimiter(options: { windowMs: number; maxRequests: number; bindingName?: RateLimiterBindingName }): MiddlewareHandler<{ Bindings: Bindings }> {
     return async (c, next) => {
@@ -24,6 +24,18 @@ export function rateLimiter(options: { windowMs: number; maxRequests: number; bi
             }
             await next()
             return
+        }
+
+        if (options.bindingName) {
+            let isProd = false
+            try {
+                isProd = new URL(c.req.url).protocol === 'https:'
+            } catch {
+                isProd = false
+            }
+            if (isProd) {
+                return jsonError(c, 'Service unavailable', 503)
+            }
         }
 
         const key = `${options.bindingName ?? 'local'}:${ip}`
@@ -65,8 +77,4 @@ export const authRateLimiter = rateLimiter({ windowMs: 60 * 1000, maxRequests: 1
 
 export const chatRateLimiter = rateLimiter({ windowMs: 60 * 1000, maxRequests: 20, bindingName: 'CHAT_RATE_LIMITER' })
 
-export function adminRateLimiterFallback(): MiddlewareHandler<{ Bindings: Bindings }> {
-    return rateLimiter({ windowMs: 60 * 1000, maxRequests: 5 })
-}
-
-export const adminRateLimiter = adminRateLimiterFallback()
+export const adminRateLimiter = rateLimiter({ windowMs: 60 * 1000, maxRequests: 5, bindingName: 'ADMIN_RATE_LIMITER' })

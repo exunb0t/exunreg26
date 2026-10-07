@@ -3,8 +3,11 @@ import { jsonError, jsonOk } from '../lib/response'
 import { getEmailFromCookie } from '../middleware/auth'
 import * as queries from '../db/queries'
 import type { AppContext } from '../types'
-import { newPasswordHash } from '../lib/crypto'
-import { ADDRESS_MAX, CLASS_MAX, NAME_MAX, PHONE_REGEX, SCHOOL_MAX, TEAM_MAX, capLength, isValidEmail, isValidPhone, normalizeEmail } from '../lib/validation'
+import { newPasswordHash, hashSessionToken } from '../lib/crypto'
+import { individualRegistrations } from '../db/schema'
+import { eq } from 'drizzle-orm'
+import { getAuthTokenCookie } from '../lib/cookies'
+import { ADDRESS_MAX, NAME_MAX, SCHOOL_MAX, truncate, isValidEmail, isValidPhone, normalizeEmail } from '../lib/validation'
 
 export async function updateProfile(c: AppContext) {
     const email = getEmailFromCookie(c)
@@ -18,7 +21,7 @@ export async function updateProfile(c: AppContext) {
     const patch: Record<string, unknown> = {}
 
     if (pl.fullname !== undefined) {
-        const v = capLength(String(pl.fullname ?? ''), NAME_MAX)
+        const v = truncate(String(pl.fullname ?? ''), NAME_MAX)
         if (!v) return jsonError(c, 'Fullname cannot be empty', 400)
         patch.fullname = v.toUpperCase()
     }
@@ -28,10 +31,10 @@ export async function updateProfile(c: AppContext) {
         if (v.length > 32) return jsonError(c, 'Phone number too long', 400)
         patch.phoneNumber = v
     }
-    if (pl.schoolCode !== undefined) patch.schoolCode = capLength(String(pl.schoolCode ?? ''), SCHOOL_MAX)
-    if (pl.institutionName !== undefined) patch.institutionName = capLength(String(pl.institutionName ?? ''), SCHOOL_MAX).toUpperCase()
-    if (pl.principalsName !== undefined) patch.principalsName = capLength(String(pl.principalsName ?? ''), NAME_MAX).toUpperCase()
-    if (pl.address !== undefined) patch.address = capLength(String(pl.address ?? ''), ADDRESS_MAX).toUpperCase()
+    if (pl.schoolCode !== undefined) patch.schoolCode = truncate(String(pl.schoolCode ?? ''), SCHOOL_MAX)
+    if (pl.institutionName !== undefined) patch.institutionName = truncate(String(pl.institutionName ?? ''), SCHOOL_MAX).toUpperCase()
+    if (pl.principalsName !== undefined) patch.principalsName = truncate(String(pl.principalsName ?? ''), NAME_MAX).toUpperCase()
+    if (pl.address !== undefined) patch.address = truncate(String(pl.address ?? ''), ADDRESS_MAX).toUpperCase()
 
     if (pl.username !== undefined) {
         const username = String(pl.username ?? '').trim()
@@ -51,6 +54,14 @@ export async function updateProfile(c: AppContext) {
         const pepper = (c.env.AUTH_SALT ?? '').trim()
         if (!pepper) return jsonError(c, 'Server misconfigured', 500)
         patch.passwordHash = await newPasswordHash(pw, pepper)
+        const currentToken = getAuthTokenCookie(c)
+        if (currentToken) {
+            c.executionCtx.waitUntil(
+                queries.deleteSessionsByEmailExcept(db, email, await hashSessionToken(currentToken, pepper)).catch(() => null)
+            )
+        } else {
+            c.executionCtx.waitUntil(queries.deleteSessionsByEmail(db, email).catch(() => null))
+        }
     }
 
     if (pl.principalsEmail !== undefined) {
@@ -65,12 +76,14 @@ export async function updateProfile(c: AppContext) {
         const wsIndi = user.individual
         patch.individual = Boolean(pl.individual)
         if (pl.individual && !wsIndi) {
-            await queries.deleteIndividualRegistrationsByUser(db, user.id)
-            await queries.createIndividualRegistration(db, {
-                userId: user.id,
-                fullname: capLength(String(pl.fullname ?? user.fullname ?? ''), NAME_MAX) || '',
-                userEmail: email,
-            })
+            await db.batch([
+                db.delete(individualRegistrations).where(eq(individualRegistrations.userId, user.id)),
+                db.insert(individualRegistrations).values({
+                    userId: user.id,
+                    fullname: truncate(String(pl.fullname ?? user.fullname ?? ''), NAME_MAX) || '',
+                    userEmail: email,
+                }),
+            ])
             patch.institutionName = ""
             patch.schoolCode = ""
             patch.principalsName = ""

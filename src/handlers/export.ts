@@ -4,7 +4,7 @@ import type { Db } from '../db/client'
 import { getDb } from '../db/client'
 import * as queries from '../db/queries'
 import type { UserRow, RegistrationRow, IndividualRegistrationRow, EventRow } from '../db/queries'
-import { users, events, registrations, individualRegistrations, logs, oauthTokens, queries as queriesTable, conversations, chatMessages, kbSources, kbChunks, tickets, usrRegs } from '../db/schema'
+import { users, events, registrations, individualRegistrations, logs, oauthTokens, queries as queriesTable, conversations, chatMessages, kbSources, kbChunks, tickets } from '../db/schema'
 import { jsonOk, jsonError } from '../lib/response'
 import { ensureTabs, writeTab, freezeHeaderRow } from '../lib/googleSheets'
 import { getOAuthAccessToken, listBackups, uploadBackup, deleteDriveFile } from '../lib/googleDrive'
@@ -113,14 +113,10 @@ export function buildIndividualTable(
 export async function exportSheets(c: AppContext) {
     const db = getDb(c.env)
 
-    const payload = await c.req.json<{ spreadsheetId?: string }>().catch(() => null)
-    const spreadsheetId = payload?.spreadsheetId?.trim() || (c.env.SPREADSHEET_ID ?? '').trim()
+    const spreadsheetId = (c.env.SPREADSHEET_ID ?? '').trim()
 
     if (!spreadsheetId) {
-        return jsonError(c, 'spreadsheetId is required (or set SPREADSHEET_ID)', 400)
-    }
-    if (!/^[A-Za-z0-9-_]+$/.test(spreadsheetId)) {
-        return jsonError(c, 'Invalid spreadsheetId', 400)
+        return jsonError(c, 'Sheet export is not configured', 400)
     }
 
     try {
@@ -147,6 +143,7 @@ export async function exportSheets(c: AppContext) {
             freezeHeaderRow(c.env, spreadsheetId, 'Registrations'),
             freezeHeaderRow(c.env, spreadsheetId, 'Individual'),
         ])
+        await queries.createLog(db, 'sheets-export', `users=${userRows.length} registrations=${regRows.length} individual=${indivRows.length}`)
 
         return jsonOk(c, { ...counts, spreadsheetId }, 'Sheet updated (DB to Sheet)')
     } catch (err: any) {
@@ -179,7 +176,6 @@ export async function backupDatabase(db: Db, env: Bindings): Promise<BackupResul
         kb_sources: await db.select().from(kbSources),
         kb_chunks: await db.select().from(kbChunks),
         tickets: await db.select().from(tickets),
-        usr_regs: await db.select().from(usrRegs),
     }
 
     const content = JSON.stringify({ exportedAt: new Date().toISOString(), tables })
@@ -212,6 +208,7 @@ export async function backupNow(c: AppContext) {
     const db = getDb(c.env)
     try {
         const result = await backupDatabase(db, c.env)
+        await queries.createLog(db, 'drive-backup', result.uploaded ? `uploaded ${result.fileId ?? ''}` : `skipped: ${result.reason ?? 'unknown'}`)
         return jsonOk(c, result, result.uploaded ? 'Backup uploaded to Drive' : `Backup skipped: ${result.reason ?? 'unknown'}`)
     } catch (err: any) {
         return jsonError(c, err?.message ?? 'Backup failed', 500)

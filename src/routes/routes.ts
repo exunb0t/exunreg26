@@ -40,7 +40,6 @@ export function setupRoutes() {
     const app = new Hono<{ Bindings: Bindings }>()
 
     app.use('/api/*', apiRateLimiter)
-    app.use('/api/auth/*', authRateLimiter)
     app.use('/api/chat/*', chatRateLimiter)
 
     app.get('/api/health', handlers.healthCheck)
@@ -49,12 +48,13 @@ export function setupRoutes() {
     app.get('/api/admin/oauth2/start', adminRequired, backupHandlers.startOAuth2)
     app.get('/oauth2callback', adminRequired, backupHandlers.handleOAuth2Callback)
 
-    app.post('/api/auth/send-otp', authHandlers.sendOTP)
-    app.post('/api/auth/login', handlers.login)
-    app.post('/api/auth/signup', handlers.signup)
-    app.post('/api/auth/verify-otp', authHandlers.verifyOTP)
+    app.post('/api/auth/send-otp', authRateLimiter, authHandlers.sendOTP)
+    app.post('/api/auth/login', authRateLimiter, handlers.login)
+    app.post('/api/auth/signup', authRateLimiter, handlers.signup)
+    app.post('/api/auth/verify-otp', authRateLimiter, authHandlers.verifyOTP)
 
     app.post('/api/auth/logout', authHandlers.logout)
+    app.post('/api/auth/logout-all', authRequired, authHandlers.logoutAll)
 
     app.get('/api/profile', authRequired, handlers.getProfile)
     app.patch('/api/profile', authRequired, profileHandlers.updateProfile)
@@ -66,7 +66,6 @@ export function setupRoutes() {
 
     app.post('/api/query', authRequired, queryHandlers.queryHandler)
     app.get('/api/tickets/mine', authRequired, queryHandlers.listMyTickets)
-    app.get('/api/tickets/next', authRequired, ticketHandlers.nextTicket)
     app.post('/api/tickets', authRequired, ticketHandlers.createTicket)
     app.get('/ticket', (c) => serveAsset(c, '/ticket.html'))
 

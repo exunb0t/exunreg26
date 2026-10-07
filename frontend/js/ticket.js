@@ -51,17 +51,19 @@
       return;
     }
 
-    try {
-      const resp = await api("/api/tickets/next", { method: "GET" });
-      if (resp && resp.data && resp.data.displayId) previewId = resp.data.displayId;
-    } catch (e) {}
     paintIds();
     paintNow();
 
     document.querySelectorAll(".segment-btn").forEach((btn) => {
+      btn.setAttribute("role", "radio");
+      btn.setAttribute("aria-checked", String(btn.classList.contains("active")));
       btn.addEventListener("click", () => {
-        document.querySelectorAll(".segment-btn").forEach((b) => b.classList.remove("active"));
+        document.querySelectorAll(".segment-btn").forEach((b) => {
+          b.classList.remove("active");
+          b.setAttribute("aria-checked", "false");
+        });
         btn.classList.add("active");
+        btn.setAttribute("aria-checked", "true");
         priority = btn.dataset.value;
       });
     });
@@ -167,10 +169,6 @@
       $("t-count").textContent = "0 / 2000";
       $("ticket-success").hidden = true;
       $("ticket-form-wrap").hidden = false;
-      try {
-        const resp = await api("/api/tickets/next", { method: "GET" });
-        if (resp && resp.data && resp.data.displayId) previewId = resp.data.displayId;
-      } catch (e) {}
       paintIds();
       paintNow();
     });

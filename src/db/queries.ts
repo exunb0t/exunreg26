@@ -1,6 +1,6 @@
 import { and, asc, desc, eq, lt, sql, type SQL } from 'drizzle-orm'
 import type { Db } from './client'
-import { users, events, registrations, individualRegistrations, logs, oauthTokens, passwordResetOtps, authSessions, queries, conversations, chatMessages, kbSources, kbChunks, tickets, ticketReplies, usrRegs } from './schema'
+import { users, events, registrations, individualRegistrations, logs, oauthTokens, passwordResetOtps, authSessions, queries, conversations, chatMessages, kbSources, kbChunks, tickets, ticketReplies, rateCounters } from './schema'
 import type { Participant } from '../types'
 
 export type UserRow = typeof users.$inferSelect
@@ -23,20 +23,6 @@ export type AuthSessionInsert = typeof authSessions.$inferInsert
 export type PasswordResetOtpRow = typeof passwordResetOtps.$inferSelect
 export type PasswordResetOtpInsert = typeof passwordResetOtps.$inferInsert
 
-export function parseRegistrations(raw: string): Record<string, Participant[]> {
-    if (!raw || raw === '{}') return {}
-    try {
-        return JSON.parse(raw) as Record<string, Participant[]>
-    } catch {
-        return {}
-    }
-}
-
-export function stringifyRegistrations(regs: Record<string, Participant[]> | undefined): string {
-    if (!regs) return '{}'
-    return JSON.stringify(regs)
-}
-
 export async function getUserByEmail(db: Db, email: string): Promise<UserRow | undefined> {
     const rows = await db.select().from(users).where(eq(users.email, email)).limit(1)
     return rows[0]
@@ -54,7 +40,7 @@ export async function getUserByUsername(db: Db, username: string): Promise<UserR
 
 
 export async function getAllUsers(db: Db, limit: number): Promise<UserRow[]> {
-    return db.select().from(users).limit(limit)
+    return db.select().from(users).orderBy(users.id).limit(limit)
 }
 
 export async function createUser(db: Db, data: UserInsert): Promise<UserRow> {
@@ -72,7 +58,18 @@ export async function updateUser(db: Db, email: string, data: Partial<UserInsert
 }
 
 export async function deleteUserByEmail(db: Db, email: string): Promise<void> {
-    await db.delete(users).where(eq(users.email, email))
+    const user = await getUserByEmail(db, email)
+    if (!user) return
+    await db.batch([
+        db.delete(chatMessages).where(sql`${chatMessages.conversationId} IN (SELECT ${conversations.id} FROM ${conversations} WHERE ${conversations.userId} = ${user.id})`),
+        db.delete(conversations).where(eq(conversations.userId, user.id)),
+        db.delete(individualRegistrations).where(eq(individualRegistrations.userId, user.id)),
+        db.delete(registrations).where(eq(registrations.userId, user.id)),
+        db.delete(tickets).where(eq(tickets.userEmail, email)),
+        db.delete(authSessions).where(eq(authSessions.email, email)),
+        db.delete(passwordResetOtps).where(eq(passwordResetOtps.email, email)),
+        db.delete(users).where(eq(users.email, email)),
+    ])
 }
 
 export async function getEventById(db: Db, id: string): Promise<EventRow | undefined> {
@@ -81,7 +78,7 @@ export async function getEventById(db: Db, id: string): Promise<EventRow | undef
 }
 
 export async function getAllEvents(db: Db, limit: number): Promise<EventRow[]> {
-    return db.select().from(events).limit(limit)
+    return db.select().from(events).orderBy(events.id).limit(limit)
 }
 
 export async function createEvent(db: Db, data: EventInsert): Promise<EventRow> {
@@ -108,7 +105,7 @@ export async function getRegistrationById(db: Db, id: number): Promise<Registrat
 }
 
 export async function getAllRegistrations(db: Db, limit: number): Promise<RegistrationRow[]> {
-    return db.select().from(registrations).limit(limit)
+    return db.select().from(registrations).orderBy(registrations.id).limit(limit)
 }
 
 export async function getRegistrationCountsByEvent(db: Db): Promise<Map<string, number>> {
@@ -194,8 +191,12 @@ export async function createLog(db: Db, reason: string, content: string): Promis
     await db.insert(logs).values({ reason, content })
 }
 
-export async function getAllLogs(db: Db): Promise<LogRow[]> {
-    return db.select().from(logs).orderBy(sql`created_at DESC`)
+export async function getAllLogs(db: Db, limit = 500): Promise<LogRow[]> {
+    return db.select().from(logs).orderBy(sql`created_at DESC`).limit(limit)
+}
+
+export async function deleteOldLogs(db: Db, days: number): Promise<void> {
+    await db.delete(logs).where(lt(logs.createdAt, sql`datetime('now', ${`-${days} days`})`))
 }
 
 export async function getOAuthToken(db: Db, provider: string): Promise<OAuthTokenRow | undefined> {
@@ -232,6 +233,16 @@ export async function createPasswordResetOtp(
     const rows = await db
         .insert(passwordResetOtps)
         .values(data)
+        .onConflictDoUpdate({
+            target: passwordResetOtps.email,
+            set: {
+                otpHash: data.otpHash,
+                expiresAt: data.expiresAt,
+                requestCount: data.requestCount,
+                requestDay: data.requestDay,
+                attemptCount: data.attemptCount,
+            },
+        })
         .returning()
 
     return rows[0]
@@ -343,6 +354,52 @@ export async function deleteSession(
         .where(eq(authSessions.token, token))
 }
 
+export async function deleteSessionsByEmail(
+    db: Db,
+    email: string
+): Promise<void> {
+    await db
+        .delete(authSessions)
+        .where(eq(authSessions.email, email))
+}
+
+export async function deleteSessionsByEmailExcept(
+    db: Db,
+    email: string,
+    token: string
+): Promise<void> {
+    await db
+        .delete(authSessions)
+        .where(and(eq(authSessions.email, email), sql`${authSessions.token} != ${token}`))
+}
+
+export type RateCounterRow = typeof rateCounters.$inferSelect
+
+export async function getRateCount(db: Db, key: string): Promise<number> {
+    const rows = await db
+        .select()
+        .from(rateCounters)
+        .where(eq(rateCounters.key, key))
+        .limit(1)
+    return rows[0]?.count ?? 0
+}
+
+export async function bumpRateCounter(db: Db, key: string): Promise<number> {
+    const rows = await db
+        .insert(rateCounters)
+        .values({ key, count: 1, updatedAt: new Date().toISOString() })
+        .onConflictDoUpdate({
+            target: rateCounters.key,
+            set: { count: sql`${rateCounters.count} + 1` },
+        })
+        .returning()
+    return rows[0]?.count ?? 1
+}
+
+export async function deleteOldRateCounters(db: Db, days: number): Promise<void> {
+    await db.delete(rateCounters).where(lt(rateCounters.updatedAt, sql`datetime('now', ${`-${days} days`})`))
+}
+
 export type QueryRow = typeof queries.$inferSelect
 export type QueryInsert = typeof queries.$inferInsert
 
@@ -398,8 +455,10 @@ export async function updateConversation(
 }
 
 export async function deleteConversation(db: Db, id: string): Promise<void> {
-    await db.delete(chatMessages).where(eq(chatMessages.conversationId, id))
-    await db.delete(conversations).where(eq(conversations.id, id))
+    await db.batch([
+        db.delete(chatMessages).where(eq(chatMessages.conversationId, id)),
+        db.delete(conversations).where(eq(conversations.id, id)),
+    ])
 }
 
 export async function createChatMessage(db: Db, data: ChatMessageInsert): Promise<ChatMessageRow> {
@@ -478,8 +537,10 @@ export async function updateKbSource(
 }
 
 export async function deleteKbSource(db: Db, id: number): Promise<void> {
-    await db.delete(kbChunks).where(eq(kbChunks.sourceId, id))
-    await db.delete(kbSources).where(eq(kbSources.id, id))
+    await db.batch([
+        db.delete(kbChunks).where(eq(kbChunks.sourceId, id)),
+        db.delete(kbSources).where(eq(kbSources.id, id)),
+    ])
 }
 
 export async function getKbChunksBySource(db: Db, sourceId: number, limit: number): Promise<KbChunkRow[]> {
@@ -616,11 +677,10 @@ export async function deleteIndividualRegistrationsByEventUser(db: Db, eventId: 
 }
 
 export async function deleteRegistrationsByEvent(db: Db, eventId: string): Promise<void> {
-    await db.delete(registrations).where(eq(registrations.eventId, eventId))
-}
-
-export async function deleteUsrRegsByEvent(db: Db, eventId: string): Promise<void> {
-    await db.delete(usrRegs).where(eq(usrRegs.eventId, eventId))
+    await db.batch([
+        db.delete(individualRegistrations).where(eq(individualRegistrations.eventId, eventId)),
+        db.delete(registrations).where(eq(registrations.eventId, eventId)),
+    ])
 }
 
 export async function countUsers(db: Db): Promise<number> {
@@ -638,10 +698,10 @@ export async function countRegistrations(db: Db): Promise<number> {
     return rows[0]?.count ?? 0
 }
 
-export async function deleteExpiredSessions(db: Db, nowIso: string): Promise<void> {
-    await db.delete(authSessions).where(lt(authSessions.expiresAt, nowIso))
+export async function deleteExpiredSessions(db: Db): Promise<void> {
+    await db.delete(authSessions).where(sql`datetime(${authSessions.expiresAt}) < datetime('now')`)
 }
 
-export async function deleteExpiredOtps(db: Db, nowIso: string): Promise<void> {
-    await db.delete(passwordResetOtps).where(lt(passwordResetOtps.expiresAt, nowIso))
+export async function deleteExpiredOtps(db: Db): Promise<void> {
+    await db.delete(passwordResetOtps).where(sql`datetime(${passwordResetOtps.expiresAt}) < datetime('now')`)
 }

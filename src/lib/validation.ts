@@ -57,7 +57,7 @@ export const CLASS_MAX = 32
 export const SCHOOL_MAX = 160
 export const ADDRESS_MAX = 500
 
-export function capLength(s: string, max: number): string {
+export function truncate(s: string, max: number): string {
     const t = s.trim()
     return t.length > max ? t.slice(0, max) : t
 }

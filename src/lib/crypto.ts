@@ -84,12 +84,6 @@ export async function hashOtp(email: string, otp: string, pepper: string): Promi
   return bufferToHex(sig)
 }
 
-export async function verifyOtpHash(email: string, otp: string, stored: string, pepper: string): Promise<boolean> {
-  const fresh = await hashOtp(email, otp, pepper)
-  if (timingSafeEqual(fresh, stored)) return true
-  return timingSafeEqual(await sha256Hex(otp), stored)
-}
-
 export function generateOtp6(): string {
   const buf = new Uint32Array(1)
   const range = 900000

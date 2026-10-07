@@ -6,6 +6,7 @@ import { sql } from 'drizzle-orm'
 import { getEmailFromCookie } from '../middleware/auth'
 import { parseLimit } from '../lib/paging'
 import { retrieveContext, buildContextBlock, buildRosterBlock } from '../lib/rag'
+import { dayBucket } from '../lib/rateStore'
 import systemPromptTemplate from '../prompts/system-prompt.md' with { type: 'text' }
 import { getChatCompletion, streamChatCompletion, type ChatMessage } from '../lib/llm'
 import { openTicket } from '../lib/tickets'
@@ -20,7 +21,6 @@ const ROSTER_MAX = 3000
 const CHAT_DAILY_MAX = 100
 
 const enabledCache = new Map<string, { at: number; ids: number[] }>()
-const dailyUsage = new Map<string, { day: string; count: number }>()
 
 function getExcludedIdsCached(sources: { id: number; enabled: number }[]): number[] {
     const now = Date.now()
@@ -32,16 +32,9 @@ function getExcludedIdsCached(sources: { id: number; enabled: number }[]): numbe
     return ids
 }
 
-function chatBudgetExceeded(email: string): boolean {
-    const day = new Date().toISOString().slice(0, 10)
-    const e = dailyUsage.get(email)
-    if (!e || e.day !== day) {
-        if (dailyUsage.size > 5000) dailyUsage.clear()
-        dailyUsage.set(email, { day, count: 1 })
-        return false
-    }
-    e.count += 1
-    return e.count > CHAT_DAILY_MAX
+async function chatBudgetExceeded(db: ReturnType<typeof getDb>, email: string): Promise<boolean> {
+    const count = await queries.bumpRateCounter(db, `chat:${email}:${dayBucket()}`)
+    return count > CHAT_DAILY_MAX
 }
 
 interface Suggestion {
@@ -208,7 +201,7 @@ export async function sendMessage(c: AppContext) {
         return jsonError(c, 'Message is too long', 400)
     }
 
-    if (chatBudgetExceeded(email)) {
+    if (await chatBudgetExceeded(db, email)) {
         return jsonError(c, 'Daily chat limit reached. Please try again tomorrow.', 429)
     }
 
